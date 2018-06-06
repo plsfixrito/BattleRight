@@ -34,12 +34,12 @@ namespace AimBot
             if (File.Exists(path))
             {
                 Logs.Debug("Loading " + path);
-                var loadedList = JsonHelper.DeserializeObject<List<AimbotKey>>(path);
-                if (loadedList != null)
-                    foreach (var item in loadedList)
-                    {
-                        AimbotKeys.Add(new AimbotKey(item.Id));
-                    }
+                var loaded = JsonHelper.DeserializeObject<List<AimbotKey>>(path);
+                if(loaded != null)
+                foreach (var key in loaded)
+                {
+                    AimbotKeys.Add(new AimbotKey(key.Id));
+                }
             }
 
             MainMenu.OnSaveConfig += OnSaveConfig;
