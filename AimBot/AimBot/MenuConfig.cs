@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using BattleRight.Core;
 using BattleRight.Helper;
 using BattleRight.Sandbox;
 using BattleRight.SDK.UI;
 using BattleRight.SDK.UI.Models;
 using BattleRight.SDK.UI.Values;
+using UnityEngine;
 
 namespace AimBot
 {
@@ -38,7 +41,8 @@ namespace AimBot
                 if(loaded != null)
                 foreach (var key in loaded)
                 {
-                    AimbotKeys.Add(new AimbotKey(key.Id));
+                    if(key.Id != 0)
+                        AimbotKeys.Add(new AimbotKey(key.Id));
                 }
             }
 

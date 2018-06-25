@@ -51,15 +51,16 @@ namespace AimBot
             Game.OnDraw += OnDraw;
         }
 
-        private void OnDraw(EventArgs eventArgs)
+
+		private void OnDraw(EventArgs eventArgs)
         {
             if(DrawRange.CurrentValue && LocalPlayer.Instance != null)
                 Drawing.DrawCircle(LocalPlayer.Instance.WorldPosition, AbilityRange.CurrentValue, Color.cyan);
             if(DrawPrediction.CurrentValue && LastPredOutput != null)
                 Drawing.DrawCircle(LastPredOutput.PredictedPosition, .75f, Color.yellow);
-            if (LastPredOutput != null && LastTarget != null)
+            if (Keybind.CurrentValue && LastPredOutput != null && LastTarget != null)
             {
-                GUI.Label(new Rect(0, Game.ScreenHeight * 0.3f, 400, 400), "Aimbot Target:" 
+                GUI.Label(new Rect(0, Game.ScreenHeight * 0.3f, 400, 400),   "Aimbot " + Id + " Target:" 
                                                                            + "\n - Name: " + LastTarget.Name + " (" + LastTarget.ChampionEnum
                                                                            + ")\n - Health: " + LastTarget.Health + " (" + LastTarget.HealthPercent
                                                                            + ")\n - HitChance: " + LastPredOutput.HitChance + " (" + LastPredOutput.HitChancePercent + ")");
@@ -75,11 +76,15 @@ namespace AimBot
             if (!Keybind.CurrentValue)
                 return;
             
-            LastTarget = TargetSelector.GetTarget(TargetingMode.LowestHealth, AbilityRange.CurrentValue);
+            if(LastTarget == null || !LastTarget.IsValid || LastTarget.IsImmaterial || LastTarget.IsCountering || LastTarget.Distance(LocalPlayer.Instance) > AbilityRange.CurrentValue)
+                LastTarget = TargetSelector.GetTarget(TargetingMode.LowestHealth, AbilityRange.CurrentValue);
+
             if (LastTarget == null)
                 return;
             
-            LastPredOutput = LocalPlayer.Instance.GetPrediction(LastTarget, AbilitySpeed.CurrentValue, AbilityRange.CurrentValue, AbilityRadius.CurrentValue, SkillType.Line);
+            LastPredOutput = LocalPlayer.Instance.GetPrediction(LastTarget, AbilitySpeed.CurrentValue, AbilityRange.CurrentValue, AbilityRadius.CurrentValue, SkillType.Line, 0f,
+                                                                CollisionFlags.Bush | CollisionFlags.NPCBlocker |
+                                                                (LocalPlayer.Instance.TeamId == 1 ? CollisionFlags.Team1 : CollisionFlags.Team2));
 
             TryAutoAim();
             TryUseAbility();
@@ -90,10 +95,12 @@ namespace AimBot
             if (!AutoAim.CurrentValue || LastPredOutput == null)
                 return;
 
-            if (LastPredOutput.HitChancePercent > 20
-                && !LastPredOutput.CollisionResult.CollisionFlags.HasFlag(CollisionFlags.LowBlock)
-                && !LastPredOutput.CollisionResult.CollisionFlags.HasFlag(CollisionFlags.HighBlock))
-                LocalPlayer.UpdateCursorPosition(LastPredOutput.MoveMousePosition);
+            if (LastPredOutput.HitChancePercent > 20 &&
+                !LastPredOutput.CollisionResult.CollisionFlags.HasFlag(CollisionFlags.LowBlock) &&
+                !LastPredOutput.CollisionResult.CollisionFlags.HasFlag(CollisionFlags.HighBlock))
+                LocalPlayer.Aim(LastPredOutput.PredictedPosition);
+            else
+                LocalPlayer.EditAimPosition = false;
         }
 
         private void TryUseAbility()

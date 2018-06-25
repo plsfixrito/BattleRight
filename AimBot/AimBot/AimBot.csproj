@@ -31,8 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BattleRight.Core">
-      <HintPath>..\..\..\..\Documents\GitHub\BattleRight.Project\BattleRight.Loader\bin\Debug\System\BattleRight.Core.dll</HintPath>
+    <Reference Include="BattleRight.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=65bb327b54febf4b, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleRight.Project\BattleRight.Core\bin\Debug\BattleRight.Core.dll</HintPath>
     </Reference>
     <Reference Include="BattleRight.Helper, Version=1.0.0.0, Culture=neutral, PublicKeyToken=889728e60ee12fc0, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
