@@ -17,6 +17,7 @@ namespace AimBot
         internal MenuKeybind Keybind;
         public int Id;
         internal static int Num;
+        internal static bool EditingAim;
 
         internal PredictionOutput LastPredOutput;
 
@@ -70,17 +71,30 @@ namespace AimBot
         private void OnUpdate(EventArgs eventArgs)
         {
             if (!Game.IsInGame)
+            {
+                StopEditingAim();
                 return;
+            }
 
             LastPredOutput = null;
+
             if (!Keybind.CurrentValue)
+            {
+                StopEditingAim();
                 return;
-            
-            if(LastTarget == null || !LastTarget.IsValid || LastTarget.IsImmaterial || LastTarget.IsCountering || LastTarget.Distance(LocalPlayer.Instance) > AbilityRange.CurrentValue)
+            }
+
+            if (LastTarget == null || !LastTarget.IsValid || LastTarget.IsImmaterial || LastTarget.IsCountering ||
+                LastTarget.Distance(LocalPlayer.Instance) > AbilityRange.CurrentValue)
+            {
                 LastTarget = TargetSelector.GetTarget(TargetingMode.LowestHealth, AbilityRange.CurrentValue);
+            }
 
             if (LastTarget == null)
+            {
+                StopEditingAim();
                 return;
+            }
             
             LastPredOutput = LocalPlayer.Instance.GetPrediction(LastTarget, AbilitySpeed.CurrentValue, AbilityRange.CurrentValue, AbilityRadius.CurrentValue, SkillType.Line, 0f,
                                                                 CollisionFlags.Bush | CollisionFlags.NPCBlocker |
@@ -93,14 +107,20 @@ namespace AimBot
         private void TryAutoAim()
         {
             if (!AutoAim.CurrentValue || LastPredOutput == null)
+            {
                 return;
+            }
 
             if (LastPredOutput.HitChancePercent > 20 &&
                 !LastPredOutput.CollisionResult.CollisionFlags.HasFlag(CollisionFlags.LowBlock) &&
                 !LastPredOutput.CollisionResult.CollisionFlags.HasFlag(CollisionFlags.HighBlock))
+            {
+                EditingAim = true;
                 LocalPlayer.Aim(LastPredOutput.PredictedPosition);
-            else
-                LocalPlayer.EditAimPosition = false;
+            } else
+            {
+                StopEditingAim();
+            }
         }
 
         private void TryUseAbility()
@@ -108,6 +128,15 @@ namespace AimBot
             if (!UseAbility.CurrentValue || LastPredOutput == null)
                 return;
 
+        }
+
+        private void StopEditingAim()
+        {
+            if (EditingAim)
+            {
+                EditingAim = false;
+                LocalPlayer.EditAimPosition = false;
+            }
         }
     }
 }
