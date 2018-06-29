@@ -21,7 +21,7 @@ namespace AimBot
 
         internal PredictionOutput LastPredOutput;
 
-        internal Player LastTarget;
+        internal Character LastTarget;
         
         public AimbotKey()
         {
@@ -56,14 +56,14 @@ namespace AimBot
 		private void OnDraw(EventArgs eventArgs)
         {
             if(DrawRange.CurrentValue && LocalPlayer.Instance != null)
-                Drawing.DrawCircle(LocalPlayer.Instance.WorldPosition, AbilityRange.CurrentValue, Color.cyan);
+                Drawing.DrawCircle(LocalPlayer.Instance.MapObject.Position, AbilityRange.CurrentValue, Color.cyan);
             if(DrawPrediction.CurrentValue && LastPredOutput != null)
                 Drawing.DrawCircle(LastPredOutput.PredictedPosition, .75f, Color.yellow);
             if (Keybind.CurrentValue && LastPredOutput != null && LastTarget != null)
             {
                 GUI.Label(new Rect(0, Game.ScreenHeight * 0.3f, 400, 400),   "Aimbot " + Id + " Target:" 
                                                                            + "\n - Name: " + LastTarget.Name + " (" + LastTarget.ChampionEnum
-                                                                           + ")\n - Health: " + LastTarget.Health + " (" + LastTarget.HealthPercent
+                                                                           + ")\n - Health: " + LastTarget.Living.Health + " (" + LastTarget.Living.HealthPercent
                                                                            + ")\n - HitChance: " + LastPredOutput.HitChance + " (" + LastPredOutput.HitChancePercent + ")");
             }
         }
@@ -98,7 +98,7 @@ namespace AimBot
             
             LastPredOutput = LocalPlayer.Instance.GetPrediction(LastTarget, AbilitySpeed.CurrentValue, AbilityRange.CurrentValue, AbilityRadius.CurrentValue, SkillType.Line, 0f,
                                                                 CollisionFlags.Bush | CollisionFlags.NPCBlocker |
-                                                                (LocalPlayer.Instance.TeamId == 1 ? CollisionFlags.Team1 : CollisionFlags.Team2));
+                                                                (LocalPlayer.Instance.BaseObject.TeamId == 1 ? CollisionFlags.Team1 : CollisionFlags.Team2));
 
             TryAutoAim();
             TryUseAbility();
