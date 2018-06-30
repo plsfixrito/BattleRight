@@ -84,7 +84,7 @@ namespace AimBot
                 return;
             }
 
-            if (LastTarget == null || !LastTarget.IsValid || LastTarget.IsImmaterial || LastTarget.IsCountering ||
+            if (LastTarget == null || !LastTarget.IsValid || LastTarget.PhysicsCollision.IsImmaterial || LastTarget.IsCountering ||
                 LastTarget.Distance(LocalPlayer.Instance) > AbilityRange.CurrentValue)
             {
                 LastTarget = TargetSelector.GetTarget(TargetingMode.LowestHealth, AbilityRange.CurrentValue);

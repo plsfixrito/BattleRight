@@ -39,11 +39,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Documents\GitHub\BattleRight.Project\BattleRight.Loader\bin\Debug\System\BattleRight.Helper.dll</HintPath>
     </Reference>
-    <Reference Include="BattleRight.Sandbox">
-      <HintPath>..\..\..\..\Documents\GitHub\BattleRight.Project\BattleRight.Loader\bin\Debug\System\BattleRight.Sandbox.dll</HintPath>
+    <Reference Include="BattleRight.Sandbox, Version=1.0.0.0, Culture=neutral, PublicKeyToken=17d7f475c70d8a09, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleRight.Project\BattleRight.Loader\bin\Debug\System\BattleRight.Sandbox.dll</HintPath>
     </Reference>
-    <Reference Include="BattleRight.SDK">
-      <HintPath>..\..\..\..\Documents\GitHub\BattleRight.Project\BattleRight.Loader\bin\Debug\System\BattleRight.SDK.dll</HintPath>
+    <Reference Include="BattleRight.SDK, Version=1.0.0.0, Culture=neutral, PublicKeyToken=a667324049f5f09a, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\BattleRight.Project\BattleRight.Loader\bin\Debug\System\BattleRight.SDK.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="UnityEngine">
