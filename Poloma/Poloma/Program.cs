@@ -271,7 +271,7 @@ namespace Poloma
             if (!ComboMenu.Get<MenuCheckBox>("lmb.ally"))
                 return false;
 
-            var target = TargetSelector.GetTarget(EntitiesManager.LocalTeam.Where(ValidateTarget), TargetingMode.LowestHealth, lmbSkill.Range);
+            var target = TargetSelector.GetTarget(EntitiesManager.LocalTeam.Where(e => !e.IsLocalPlayer && ValidateTarget(e)), TargetingMode.LowestHealth, lmbSkill.Range);
 
             if (target == null)
                 return false;
