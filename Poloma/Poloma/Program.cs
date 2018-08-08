@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using BattleRight.Core;
 using BattleRight.Core.Enumeration;
 using BattleRight.Core.GameObjects;
+using BattleRight.Core.GameObjects.Models;
 using BattleRight.Sandbox;
 using BattleRight.SDK;
 using BattleRight.SDK.Enumeration;
@@ -13,11 +15,25 @@ using UnityEngine;
 
 namespace Poloma
 {
+    //TODO:
+    // Add Key Attack Enemies
+    // Add Key Heal Allies
+    // Add Combobox to Switch between Auto Modes
     public class Program : IAddon
     {
+        public enum TargetingOrder
+        {
+            EnemyAllyOrb,
+            EnemyOrbAlly,
+            OrbEnemyAlly,
+            AllyEnemyOrb,
+            AllyOrbEnemy,
+            OrbAllyEnemy,
+        }
+
         internal static bool IsPoloma;
         internal static bool EditingAim, StartedCast;
-
+        
         internal static SkillBase lmbSkill, rmbSkill, spaceSkill, qSkill, eSkill, rSkill, ex1Skill, ex2Skill, fSkill;
         internal static Menu PolomaMenu, ComboMenu;
         internal static PredictionOutput LastOutput;
@@ -53,6 +69,9 @@ namespace Poloma
 
         private void GameOnOnDraw(EventArgs args)
         {
+#if !DEBUG
+            return;
+#endif
             if(LastOutput == null)
                 return;
 
@@ -61,14 +80,28 @@ namespace Poloma
 
         private void GameOnOnUpdate(EventArgs args)
         {
-            if (!ComboMenu.Get<MenuKeybind>("comboKey"))
+            if (!LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
+                LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) ||
+                LocalPlayer.Instance.HasCc("PANIC"))
             {
                 AbortMission();
                 return;
             }
-            
-            if (!LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
-                LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock))
+
+            if (ComboMenu.Get<MenuKeybind>("ally.key"))
+            {
+                if(!TargetAlly())
+                    AbortMission();
+                return;
+            }
+            if (ComboMenu.Get<MenuKeybind>("enemy.key"))
+            {
+                if (!TargetEnemy())
+                    AbortMission();
+                return;
+            }
+
+            if (!ComboMenu.Get<MenuKeybind>("comboKey"))
             {
                 AbortMission();
                 return;
@@ -127,24 +160,118 @@ namespace Poloma
         {
             if (!ComboMenu.Get<MenuCheckBox>("use.lmb") || !lmbSkill.IsReady)
                 return false;
-
-            Character target = null;
-            if (ComboMenu.Get<MenuCheckBox>("lmb.enemy"))
+            
+            switch((TargetingOrder)ComboMenu.Get<MenuComboBox>("lmb.to").CurrentValue)
             {
-                var targets =
-                    EntitiesManager.EnemyTeam.Where(e => !e.Living.IsDead &&
-                                                         !e.PhysicsCollision.IsImmaterial &&
-                                                         !e.SpellCollision.IsUnHitable &&
-                                                         !e.SpellCollision.IsUnTargetable &&
-                                                         !e.HasCCOfType(CCType.Consume) &&
-                                                         !e.HasCCOfType(CCType.Parry) &&
-                                                         !e.HasCCOfType(CCType.Counter) &&
-                                                         !(LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, e)).CollisionResult.IsColliding);
-                target = TargetSelector.GetTarget(targets, TargetingMode.LowestHealth, lmbSkill.Range);
+                case TargetingOrder.AllyEnemyOrb:
+                    if (TargetAlly())
+                        return true;
+                    if (TargetEnemy())
+                        return true;
+                    if (TargetOrb())
+                        return true;
+                    return false;
+                case TargetingOrder.AllyOrbEnemy:
+                    if (TargetAlly())
+                        return true;
+                    if (TargetOrb())
+                        return true;
+                    if (TargetEnemy())
+                        return true;
+                    return false;
+                case TargetingOrder.OrbAllyEnemy:
+                    if (TargetOrb())
+                        return true;
+                    if (TargetAlly())
+                        return true;
+                    if (TargetEnemy())
+                        return true;
+                    return false;
+                case TargetingOrder.EnemyAllyOrb:
+                    if (TargetEnemy())
+                        return true;
+                    if (TargetAlly())
+                        return true;
+                    if (TargetOrb())
+                        return true;
+                    return false;
+                case TargetingOrder.EnemyOrbAlly:
+                    if (TargetEnemy())
+                        return true;
+                    if (TargetOrb())
+                        return true;
+                    if (TargetAlly())
+                        return true;
+                    return false;
+                case TargetingOrder.OrbEnemyAlly:
+                    if (TargetOrb())
+                        return true;
+                    if (TargetEnemy())
+                        return true;
+                    if (TargetAlly())
+                        return true;
+                    return false;
+            }
+            
+            AbortMission();
+            return true;
+        }
+
+        internal static bool TargetOrb()
+        {
+            if (!ComboMenu.Get<MenuCheckBox>("lmb.orb"))
+                return false;
+
+            var orb = EntitiesManager.CenterOrb;
+
+            if (orb != null && orb.IsValid &&
+                !orb.Get<LivingObject>().IsDead &&
+                orb.Get<MapGameObject>().Position.Distance(LocalPlayer.Instance) < lmbSkill.Range)
+            {
+                LocalPlayer.Aim(orb.Get<MapGameObject>().Position);
+                lmbSkill.Cast();
+                EditingAim = true;
+                StartedCast = true;
+
+                return true;
             }
 
-            if (target == null && ComboMenu.Get<MenuCheckBox>("lmb.ally"))
-                target = TargetSelector.GetAlly(TargetingMode.LowestHealth, lmbSkill.Range);
+            return false;
+        }
+
+        internal static bool TargetEnemy()
+        {
+            if (!ComboMenu.Get<MenuCheckBox>("lmb.enemy"))
+                return false;
+
+            var target =
+                TargetSelector
+                   .GetTarget(EntitiesManager.EnemyTeam.Where(e => ValidateTarget(e) &&
+                                                                   !(LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, e)).CollisionResult.IsColliding),
+                              TargetingMode.LowestHealth, lmbSkill.Range);
+
+            if (target == null)
+                return false;
+
+            if (LastOutput == null || LastOutput.Input.Target != target)
+                LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, target);
+
+            if (LastOutput == null || LastOutput.CollisionResult.IsColliding)
+                return false;
+
+            LocalPlayer.Aim(LastOutput.PredictedPosition);
+            lmbSkill.Cast();
+            EditingAim = true;
+            StartedCast = true;
+            return true;
+        }
+
+        internal static bool TargetAlly()
+        {
+            if (!ComboMenu.Get<MenuCheckBox>("lmb.ally"))
+                return false;
+
+            var target = TargetSelector.GetTarget(EntitiesManager.LocalTeam.Where(ValidateTarget), TargetingMode.LowestHealth, lmbSkill.Range);
 
             if (target == null)
                 return false;
@@ -169,11 +296,16 @@ namespace Poloma
                 PolomaMenu = MainMenu.AddMenu("kappa.Poloma", "Kappa Poloma");
 
                 ComboMenu = new Menu("Combo", "Combo", true);
-                ComboMenu.Add(new MenuKeybind("comboKey", "Use Combo", KeyCode.LeftShift));
+                ComboMenu.Add(new MenuKeybind("comboKey", "Use Auto Combo", KeyCode.LeftShift));
+                ComboMenu.Add(new MenuComboBox("lmb.to", "Auto Combo Order", 0, Enum.GetNames(typeof(TargetingOrder)).Select(s => InsertBeforeUpperCase(s, " > ")).ToArray()));
+
                 ComboMenu.AddLabel(" - LMB Settings");
                 ComboMenu.Add(new MenuCheckBox("use.lmb", "Use LMB"));
                 ComboMenu.Add(new MenuCheckBox("lmb.enemy", "Use On Enemies"));
                 ComboMenu.Add(new MenuCheckBox("lmb.ally", "Use On Allies if no Enemy is found"));
+                ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
+                ComboMenu.Add(new MenuKeybind("ally.Key", "LMB On Allies", KeyCode.X));
+                ComboMenu.Add(new MenuKeybind("enemy.Key", "LMB On Enemies", KeyCode.V));
                 ComboMenu.AddSeparator(10);
 
                 ComboMenu.AddLabel(" - Q Settings");
@@ -231,6 +363,46 @@ namespace Poloma
             }
 
             LastOutput = null;
+        }
+        
+        internal static bool ValidateTarget(Character character)
+        {
+            return !character.Living.IsDead &&
+                   !character.PhysicsCollision.IsImmaterial &&
+                   !character.SpellCollision.IsUnHitable &&
+                   !character.SpellCollision.IsUnTargetable &&
+                   !character.HasCCOfType(CCType.Consume) &&
+                   !character.HasCCOfType(CCType.Parry) &&
+                   !character.HasCCOfType(CCType.Counter);
+        }
+
+        public static string InsertBeforeUpperCase(string str, string toInsert)
+        {
+            var sb = new StringBuilder();
+
+            char previousChar = char.MinValue; // Unicode '\0'
+
+            foreach (char c in str)
+            {
+                if (char.IsUpper(c))
+                {
+                    // If not the first character and previous character is not a space, insert a space before uppercase
+
+                    if (sb.Length != 0 && previousChar != ' ')
+                    {
+                        foreach (var t in toInsert)
+                        {
+                            sb.Append(t);
+                        }
+                    }
+                }
+
+                sb.Append(c);
+
+                previousChar = c;
+            }
+
+            return sb.ToString();
         }
 
         public void OnUnload()
