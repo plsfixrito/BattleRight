@@ -160,53 +160,17 @@ namespace Poloma
             switch((TargetingOrder)ComboMenu.Get<MenuComboBox>("lmb.to").CurrentValue)
             {
                 case TargetingOrder.AllyEnemyOrb:
-                    if (TargetAlly())
-                        return true;
-                    if (TargetEnemy())
-                        return true;
-                    if (TargetOrb())
-                        return true;
-                    return false;
+                    return TargetAlly() || TargetEnemy() || TargetOrb();
                 case TargetingOrder.AllyOrbEnemy:
-                    if (TargetAlly())
-                        return true;
-                    if (TargetOrb())
-                        return true;
-                    if (TargetEnemy())
-                        return true;
-                    return false;
+                    return TargetAlly() || TargetOrb() || TargetEnemy();
                 case TargetingOrder.OrbAllyEnemy:
-                    if (TargetOrb())
-                        return true;
-                    if (TargetAlly())
-                        return true;
-                    if (TargetEnemy())
-                        return true;
-                    return false;
+                    return TargetOrb() || TargetAlly() || TargetEnemy();
                 case TargetingOrder.EnemyAllyOrb:
-                    if (TargetEnemy())
-                        return true;
-                    if (TargetAlly())
-                        return true;
-                    if (TargetOrb())
-                        return true;
-                    return false;
+                    return TargetEnemy() || TargetAlly() || TargetOrb();
                 case TargetingOrder.EnemyOrbAlly:
-                    if (TargetEnemy())
-                        return true;
-                    if (TargetOrb())
-                        return true;
-                    if (TargetAlly())
-                        return true;
-                    return false;
+                    return TargetEnemy() || TargetOrb() || TargetAlly();
                 case TargetingOrder.OrbEnemyAlly:
-                    if (TargetOrb())
-                        return true;
-                    if (TargetEnemy())
-                        return true;
-                    if (TargetAlly())
-                        return true;
-                    return false;
+                    return TargetOrb() || TargetEnemy() || TargetAlly();
             }
             
             AbortMission();
