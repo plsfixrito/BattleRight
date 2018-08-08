@@ -15,10 +15,6 @@ using UnityEngine;
 
 namespace Poloma
 {
-    //TODO:
-    // Add Key Attack Enemies
-    // Add Key Heal Allies
-    // Add Combobox to Switch between Auto Modes
     public class Program : IAddon
     {
         public enum TargetingOrder
@@ -297,7 +293,6 @@ namespace Poloma
 
                 ComboMenu = new Menu("Combo", "Combo", true);
                 ComboMenu.Add(new MenuKeybind("comboKey", "Use Auto Combo", KeyCode.LeftShift));
-                ComboMenu.Add(new MenuComboBox("lmb.to", "Auto Combo Order", 0, Enum.GetNames(typeof(TargetingOrder)).Select(s => InsertBeforeUpperCase(s, " > ")).ToArray()));
 
                 ComboMenu.AddLabel(" - LMB Settings");
                 ComboMenu.Add(new MenuCheckBox("use.lmb", "Use LMB"));
@@ -306,6 +301,7 @@ namespace Poloma
                 ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
                 ComboMenu.Add(new MenuKeybind("ally.key", "LMB On Allies", KeyCode.X));
                 ComboMenu.Add(new MenuKeybind("enemy.key", "LMB On Enemies", KeyCode.V));
+                ComboMenu.Add(new MenuComboBox("lmb.to", "Combo Target Order", 0, Enum.GetNames(typeof(TargetingOrder)).Select(s => InsertBeforeUpperCase(s, " > ")).ToArray()));
                 ComboMenu.AddSeparator(10);
 
                 ComboMenu.AddLabel(" - Q Settings");
