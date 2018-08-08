@@ -304,8 +304,8 @@ namespace Poloma
                 ComboMenu.Add(new MenuCheckBox("lmb.enemy", "Use On Enemies"));
                 ComboMenu.Add(new MenuCheckBox("lmb.ally", "Use On Allies if no Enemy is found"));
                 ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
-                ComboMenu.Add(new MenuKeybind("ally.Key", "LMB On Allies", KeyCode.X));
-                ComboMenu.Add(new MenuKeybind("enemy.Key", "LMB On Enemies", KeyCode.V));
+                ComboMenu.Add(new MenuKeybind("ally.key", "LMB On Allies", KeyCode.X));
+                ComboMenu.Add(new MenuKeybind("enemy.key", "LMB On Enemies", KeyCode.V));
                 ComboMenu.AddSeparator(10);
 
                 ComboMenu.AddLabel(" - Q Settings");
