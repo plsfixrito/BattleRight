@@ -236,8 +236,7 @@ namespace Poloma
             if (target == null)
                 return false;
 
-            if (LastOutput == null || LastOutput.Input.Target != target)
-                LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, target);
+            LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, target);
 
             if (LastOutput == null || LastOutput.CollisionResult.IsColliding)
                 return false;
