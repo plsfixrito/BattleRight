@@ -32,6 +32,11 @@ namespace Poloma
 
 		internal static SkillBase lmbSkill, rmbSkill, spaceSkill, qSkill, eSkill, rSkill, ex1Skill, ex2Skill, fSkill;
 		internal static Menu PolomaMenu, ComboMenu, PlayersMenu, DrawMenu;
+		internal static MenuCheckBox UseLmb, LmbEnemy, LmbAlly, LmbOrb, LmbHealStop, UseQ, UseExQ, DrawLmb, DrawQ, DrawAim;
+		internal static MenuKeybind ComboKey, AllyKey, EnemyKey;
+		internal static MenuComboBox LmbTo;
+		internal static MenuSlider ExQForce;
+		internal static MenuIntSlider QCount, ExQCount;
 		internal static PredictionOutput LastOutput;
 		internal static Color HotPink = new Color(1f, 0.4117647058823529f, 0.7058823529411765f, 1f);
 
@@ -55,8 +60,10 @@ namespace Poloma
 					                     PlayersMenu.AddLabel(" - Local Team");
 					                     foreach (var player in EntitiesManager.LocalTeam)
 					                     {
-											 if(!player.IsLocalPlayer)
+						                     if (!player.IsLocalPlayer)
+											 {
 												 PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName, "Heal " + player.Name + " (" + player.ObjectName + ")"));
+											 }
 										 }
 
 					                     PlayersMenu.AddSeparator(5);
@@ -84,11 +91,11 @@ namespace Poloma
 
 		private void GameOnOnDraw(EventArgs args)
 		{
-			if (DrawMenu.Get<MenuCheckBox>("draw.lmb"))
+			if (DrawLmb)
 			{
 				Drawing.DrawCircle(LocalPlayer.Instance.MapObject.Position, lmbSkill.Range, Color.cyan);
 			}
-			if (DrawMenu.Get<MenuCheckBox>("draw.q"))
+			if (DrawQ)
 			{
 				Drawing.DrawCircle(LocalPlayer.Instance.MapObject.Position, qSkill.Range, Color.magenta);
 			}
@@ -97,8 +104,7 @@ namespace Poloma
 			if (LastOutput == null)
 				return;
 
-
-			if (DrawMenu.Get<MenuCheckBox>("draw.aim"))
+			if (DrawAim)
 				Drawing.DrawCircle(LastOutput.PredictedPosition, 0.75f, Color.red);
 		}
 
@@ -111,7 +117,7 @@ namespace Poloma
 				return;
 			}
 
-			if (ComboMenu.Get<MenuKeybind>("ally.key"))
+			if (AllyKey)
 			{
 				if (!TargetAlly())
 					AbortMission();
@@ -119,7 +125,7 @@ namespace Poloma
 				return;
 			}
 
-			if (ComboMenu.Get<MenuKeybind>("enemy.key"))
+			if (EnemyKey)
 			{
 				if (!TargetEnemy())
 					AbortMission();
@@ -127,7 +133,7 @@ namespace Poloma
 				return;
 			}
 
-			if (!ComboMenu.Get<MenuKeybind>("comboKey"))
+			if (!ComboKey)
 			{
 				AbortMission();
 				return;
@@ -144,9 +150,9 @@ namespace Poloma
 
 		internal static bool TryQ()
 		{
-			var useq = ComboMenu.Get<MenuCheckBox>("use.q") && qSkill.IsReady;
+			var useq = UseQ && qSkill.IsReady;
 			var exqready = ex2Skill.IsReady;
-			var useexq = ComboMenu.Get<MenuCheckBox>("use.qex") && exqready;
+			var useexq = UseExQ && exqready;
 
 			if (!useq && !useexq)
 				return false;
@@ -155,7 +161,7 @@ namespace Poloma
 			                                                 !e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
 			                                                 !e.SpellCollision.IsUnHitable && !e.SpellCollision.IsUnTargetable);
 
-			if (useexq && count >= ComboMenu.Get<MenuIntSlider>("use.qex.count"))
+			if (useexq && count >= ExQCount)
 			{
 				ex2Skill.Cast();
 				StartedCast = true;
@@ -164,9 +170,9 @@ namespace Poloma
 				return true;
 			}
 
-			var forceexq = exqready && LocalPlayer.Instance.Living.HealthPercent <= ComboMenu.Get<MenuSlider>("use.qex.force");
+			var forceexq = exqready && LocalPlayer.Instance.Living.HealthPercent <= ExQForce;
 
-			if ((useq || forceexq) && count >= ComboMenu.Get<MenuIntSlider>("use.q.count"))
+			if ((useq || forceexq) && count >= QCount)
 			{
 				if (forceexq)
 					ex2Skill.Cast();
@@ -183,39 +189,37 @@ namespace Poloma
 
 		internal static bool TryLmb()
 		{
-			if (!ComboMenu.Get<MenuCheckBox>("use.lmb") || !lmbSkill.IsReady)
+			if (!UseLmb || !lmbSkill.IsReady)
 				return false;
 
-			switch((TargetingOrder) ComboMenu.Get<MenuComboBox>("lmb.to").CurrentValue)
+			switch((TargetingOrder) LmbTo.CurrentValue)
 			{
 				case TargetingOrder.AllyEnemyOrb:
-
 					return TargetAlly() || TargetEnemy() || TargetOrb();
+
 				case TargetingOrder.AllyOrbEnemy:
-
 					return TargetAlly() || TargetOrb() || TargetEnemy();
+
 				case TargetingOrder.OrbAllyEnemy:
-
 					return TargetOrb() || TargetAlly() || TargetEnemy();
+
 				case TargetingOrder.EnemyAllyOrb:
-
 					return TargetEnemy() || TargetAlly() || TargetOrb();
+
 				case TargetingOrder.EnemyOrbAlly:
-
 					return TargetEnemy() || TargetOrb() || TargetAlly();
-				case TargetingOrder.OrbEnemyAlly:
 
+				case TargetingOrder.OrbEnemyAlly:
 					return TargetOrb() || TargetEnemy() || TargetAlly();
 			}
 
 			AbortMission();
-
 			return true;
 		}
 
 		internal static bool TargetOrb()
 		{
-			if (!ComboMenu.Get<MenuCheckBox>("lmb.orb"))
+			if (!LmbOrb)
 				return false;
 
 			var orb = EntitiesManager.CenterOrb;
@@ -235,7 +239,7 @@ namespace Poloma
 
 		internal static bool TargetEnemy()
 		{
-			if (!ComboMenu.Get<MenuCheckBox>("lmb.enemy"))
+			if (!LmbEnemy)
 				return false;
 
 			var target =
@@ -263,7 +267,7 @@ namespace Poloma
 
 		internal static bool TargetAlly()
 		{
-			if (!ComboMenu.Get<MenuCheckBox>("lmb.ally"))
+			if (!LmbAlly)
 				return false;
 
 			var needHeal = CurrentHealthPercent(LocalPlayer.Instance) < 0.98;
@@ -271,7 +275,7 @@ namespace Poloma
 				TargetSelector
 				.GetTarget(EntitiesManager.LocalTeam.Where(e => !e.IsLocalPlayer &&
 				                                                PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) &&
-																(needHeal || !ComboMenu.Get<MenuCheckBox>("lmb.healstop") || CurrentHealthPercent(e) < 0.98f) &&
+																(needHeal || !LmbHealStop || CurrentHealthPercent(e) < 0.98f) &&
 				                                                ValidateTarget(e)), TargetingMode.LowestHealth, lmbSkill.Range);
 
 			if (target == null)
@@ -297,27 +301,27 @@ namespace Poloma
 				PolomaMenu = MainMenu.AddMenu("kappa.Poloma", "Kappa Poloma");
 
 				ComboMenu = new Menu("Combo", "Combo", true);
-				ComboMenu.Add(new MenuKeybind("comboKey", "Use Auto Combo", KeyCode.LeftShift));
+				ComboKey = ComboMenu.Add(new MenuKeybind("comboKey", "Use Auto Combo", KeyCode.LeftShift));
 
 				ComboMenu.AddLabel(" - LMB Settings");
-				ComboMenu.Add(new MenuCheckBox("use.lmb", "Use LMB"));
-				ComboMenu.Add(new MenuCheckBox("lmb.enemy", "Use On Enemies"));
-				ComboMenu.Add(new MenuCheckBox("lmb.ally", "Use On Allies if no Enemy is found"));
-				ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
-				ComboMenu.Add(new MenuCheckBox("lmb.healstop", "Don't Try Heal Full Health Allies", false));
-				ComboMenu.Add(new MenuKeybind("ally.key", "LMB On Allies", KeyCode.X));
-				ComboMenu.Add(new MenuKeybind("enemy.key", "LMB On Enemies", KeyCode.V));
-				ComboMenu.Add(new MenuComboBox("lmb.to", "Combo Target Order", 0,
+				UseLmb = ComboMenu.Add(new MenuCheckBox("use.lmb", "Use LMB"));
+				LmbEnemy = ComboMenu.Add(new MenuCheckBox("lmb.enemy", "Use On Enemies"));
+				LmbAlly = ComboMenu.Add(new MenuCheckBox("lmb.ally", "Use On Allies if no Enemy is found"));
+				LmbOrb = ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
+				LmbHealStop = ComboMenu.Add(new MenuCheckBox("lmb.healstop", "Don't Try Heal Full Health Allies", false));
+				AllyKey = ComboMenu.Add(new MenuKeybind("ally.key", "LMB On Allies", KeyCode.X));
+				EnemyKey = ComboMenu.Add(new MenuKeybind("enemy.key", "LMB On Enemies", KeyCode.V));
+				LmbTo = ComboMenu.Add(new MenuComboBox("lmb.to", "Combo Target Order", 0,
 				                               Enum.GetNames(typeof(TargetingOrder)).Select(s => InsertBeforeUpperCase(s, " > "))
 				                                   .ToArray()));
 				ComboMenu.AddSeparator(10);
 
 				ComboMenu.AddLabel(" - Q Settings");
-				ComboMenu.Add(new MenuCheckBox("use.q", "Use Q"));
-				ComboMenu.Add(new MenuIntSlider("use.q.count", "Use Q Enemies", 1, 3, 1));
-				ComboMenu.Add(new MenuCheckBox("use.qex", "Use EX Q"));
-				ComboMenu.Add(new MenuIntSlider("use.qex.count", "Use EX Q Enemies", 2, 3, 1));
-				ComboMenu.Add(new MenuSlider("use.qex.force", "Force EX Q HP%", 50, 100));
+				UseQ = ComboMenu.Add(new MenuCheckBox("use.q", "Use Q"));
+				QCount = ComboMenu.Add(new MenuIntSlider("use.q.count", "Use Q Enemies", 1, 3, 1));
+				UseExQ = ComboMenu.Add(new MenuCheckBox("use.qex", "Use EX Q"));
+				ExQCount = ComboMenu.Add(new MenuIntSlider("use.qex.count", "Use EX Q Enemies", 2, 3, 1));
+				ExQForce = ComboMenu.Add(new MenuSlider("use.qex.force", "Force EX Q HP%", 50, 100));
 
 				PolomaMenu.Add(ComboMenu);
 
@@ -327,9 +331,9 @@ namespace Poloma
 				PolomaMenu.Add(PlayersMenu);
 
 				DrawMenu = new Menu("Drawing", "Drawings");
-				DrawMenu.Add(new MenuCheckBox("draw.lmb", "Draw LMB Range"));
-				DrawMenu.Add(new MenuCheckBox("draw.q", "Draw Q/EXQ Range"));
-				DrawMenu.Add(new MenuCheckBox("draw.aim", "Draw Current Aiming Position"));
+				DrawLmb = DrawMenu.Add(new MenuCheckBox("draw.lmb", "Draw LMB Range"));
+				DrawQ = DrawMenu.Add(new MenuCheckBox("draw.q", "Draw Q/EXQ Range"));
+				DrawAim = DrawMenu.Add(new MenuCheckBox("draw.aim", "Draw Current Aiming Position"));
 
 				PolomaMenu.Add(DrawMenu);
 				return true;
