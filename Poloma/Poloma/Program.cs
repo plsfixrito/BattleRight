@@ -289,7 +289,7 @@ namespace Poloma
         {
             try
             {
-                lmbSkill = new SkillBase(AbilitySlot.Ability1, SkillType.Line, 8.5f, 4, .2f);
+                lmbSkill = new SkillBase(AbilitySlot.Ability1, SkillType.Line, 8.5f, 15.5f, .2f);
                 rmbSkill = new SkillBase(AbilitySlot.Ability2, SkillType.Circle, int.MaxValue, 4, .2f);
                 spaceSkill = new SkillBase(AbilitySlot.Ability3, SkillType.Line, 9f, 4, .2f);
                 qSkill = new SkillBase(AbilitySlot.Ability4, SkillType.Circle, 2.5f, int.MaxValue, .2f, 100);
