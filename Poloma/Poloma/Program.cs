@@ -76,17 +76,16 @@ namespace Poloma
 				                     {
 					                     Game.OnUpdate -= GameOnOnUpdate;
 					                     Game.OnDraw -= GameOnOnDraw;
-
-					                     var children = PlayersMenu.Children.ToList();
-										 foreach (var child in children)
-						                     PlayersMenu.RemoveItem(child.Name);
-									 }
+				                     }
 			                     };
 			Game.OnMatchEnd += delegate(EventArgs args)
 			                   {
 				                   Game.OnUpdate -= GameOnOnUpdate;
 				                   Game.OnDraw -= GameOnOnDraw;
-			                   };
+				                   var children = PlayersMenu.Children.ToList();
+				                   foreach (var child in children)
+					                   PlayersMenu.RemoveItem(child.Name);
+							   };
 		}
 
 		private void GameOnOnDraw(EventArgs args)
