@@ -270,9 +270,10 @@ namespace Poloma
 				return false;
 
 			var needHeal = CurrentHealthPercent(LocalPlayer.Instance) < 0.98;
+				
 			var target =
 				TargetSelector
-				.GetTarget(EntitiesManager.LocalTeam.Where(e => !e.IsLocalPlayer &&
+				.GetAlly(EntitiesManager.LocalTeam.Where(e => !e.IsLocalPlayer &&
 				                                                PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) &&
 																(needHeal || !LmbHealStop || CurrentHealthPercent(e) < 0.98f) &&
 				                                                ValidateTarget(e)), TargetingMode.LowestHealth, lmbSkill.Range);
@@ -388,8 +389,14 @@ namespace Poloma
 		{
 			if (character.Living.IsDead)
 				return false;
-			var spellCol = character.SpellCollision;
 
+			if (character.IsAlly)
+			{
+				return !character.Living.ImmuneToHeals;
+			}
+
+			var car = character?.Living;
+			var spellCol = character.SpellCollision;
 			return !spellCol.IsUnHitable && !spellCol.IsUnTargetable && !character.PhysicsCollision.IsImmaterial &&
 			       !character.HasCCOfType(CCType.Consume) && !character.HasCCOfType(CCType.Parry) &&
 			       !character.HasCCOfType(CCType.Counter);
