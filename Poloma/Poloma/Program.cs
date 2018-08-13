@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using BattleRight.Core;
@@ -27,15 +28,43 @@ namespace Poloma
 			OrbAllyEnemy,
 		}
 
+		internal static Dictionary<string, bool> Debuffs = new Dictionary<string, bool>
+		{
+			{ "Panic", true },
+			{ "Frozen", true },
+			{ "Stun", true },
+			{ "Incapacitate", true },
+			{ "Venom", true },
+			{ "Knockback", false },
+			{ "ShackleDebuff", true },
+			{ "GrimoireOfChaosSurgeDebuff", true },
+			{ "SpellBlock", false },
+			{ "Immobilize", true },
+			{ "Slow", false },
+			{ "DeadlyInjectionBuff", true },
+			{ "CripplingGooDebuff", true },
+			{ "Petrify", true },
+			{ "Silence", false },
+			{ "BrainBugDebuff", true },
+			{ "ScarabDebuff", false },
+			{ "SeismicShockDebuff", false },
+			{ "ClawOfTheWickedKnockback", true },
+			{ "LunarStrikePetrify", true },
+			{ "AstralBuff", true },
+			{ "EntanglingRootsBuff", true },
+			{ "LawBringerInAir", false },
+			{ "SheepTrickDebuff", false },
+		};
+
 		internal static bool IsPoloma;
 		internal static bool EditingAim, StartedCast;
-
+		
 		internal static SkillBase lmbSkill, rmbSkill, spaceSkill, qSkill, eSkill, rSkill, ex1Skill, ex2Skill, fSkill;
-		internal static Menu PolomaMenu, ComboMenu, PlayersMenu, DrawMenu;
-		internal static MenuCheckBox UseLmb, LmbEnemy, LmbAlly, LmbOrb, LmbHealStop, UseQ, UseExQ, DrawLmb, DrawQ, DrawAim;
+		internal static Menu PolomaMenu, ComboMenu, RmbMenu, PlayersMenu, DrawMenu;
+		internal static MenuCheckBox UseLmb, LmbEnemy, LmbAlly, LmbOrb, LmbHealStop, UseRmb, UseQ, UseQCasting, UseExQ, DrawLmb, DrawQ, DrawAim;
 		internal static MenuKeybind ComboKey, AllyKey, EnemyKey;
 		internal static MenuComboBox LmbTo;
-		internal static MenuSlider ExQForce;
+		internal static MenuSlider ExQForce, FullHealthCheck;
 		internal static MenuIntSlider QCount, ExQCount;
 		internal static PredictionOutput LastOutput;
 		internal static Color HotPink = new Color(1f, 0.4117647058823529f, 0.7058823529411765f, 1f);
@@ -46,7 +75,7 @@ namespace Poloma
 				Console.WriteLine("Kappa Poloma: Menu creation failed");
 			if (!CreateSkills())
 				Console.WriteLine("Kappa Poloma: Skills creation failed");
-
+			
 			Game.OnMatchStart += delegate(EventArgs args)
 			                     {
 				                     IsPoloma = LocalPlayer.Instance != null &&
@@ -59,18 +88,15 @@ namespace Poloma
 										 
 					                     PlayersMenu.AddLabel(" - Local Team");
 					                     foreach (var player in EntitiesManager.LocalTeam)
-					                     {
-						                     if (!player.IsLocalPlayer)
-											 {
-												 PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName, "Heal " + player.Name + " (" + player.ObjectName + ")"));
-											 }
-										 }
+						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						                                                      "Heal " + player.Name + " (" + player.ObjectName + ")"));
 
-					                     PlayersMenu.AddSeparator(5);
+										 PlayersMenu.AddSeparator(5);
 					                     PlayersMenu.AddLabel(" - Enemy Team");
 										 foreach (var player in EntitiesManager.EnemyTeam)
 										 {
-											 PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName, "Target " + player.Name + " (" + player.ObjectName + ")"));
+											 PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName, 
+											                                  "Target " + player.Name + " (" + player.ObjectName + ")"));
 										 }
 									 } else
 				                     {
@@ -87,7 +113,7 @@ namespace Poloma
 					                   PlayersMenu.RemoveItem(child.Name);
 							   };
 		}
-
+		
 		private void GameOnOnDraw(EventArgs args)
 		{
 			if (DrawLmb)
@@ -116,6 +142,9 @@ namespace Poloma
 				return;
 			}
 
+			if (TryRmb())
+				return;
+
 			if (AllyKey)
 			{
 				if (!TargetAlly())
@@ -137,7 +166,7 @@ namespace Poloma
 				AbortMission();
 				return;
 			}
-
+			
 			if (TryQ())
 				return;
 
@@ -156,22 +185,40 @@ namespace Poloma
 			if (!useq && !useexq)
 				return false;
 
-			var count = EntitiesManager.EnemyTeam.Count(e => e.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
-			                                                 !e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
-			                                                 !e.SpellCollision.IsUnHitable && !e.SpellCollision.IsUnTargetable);
+			var casting = false;
+			var count = EntitiesManager.EnemyTeam.Count(e =>
+			                                            {
+				                                            var ret = e.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
+				                                                      !e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
+				                                                      !e.SpellCollision.IsUnHitable &&
+				                                                      !e.SpellCollision.IsUnTargetable;
+
+				                                            if (!ret)
+					                                            return false;
+
+				                                            if (UseQCasting)
+				                                            {
+																if(!casting)
+																	casting = e.IsChanneling || e.AbilitySystem.IsCasting;
+															} else
+				                                            {
+					                                            casting = true;
+				                                            }
+															
+															return true;
+			                                            });
 
 			if (useexq && count >= ExQCount)
 			{
 				ex2Skill.Cast();
 				StartedCast = true;
 				LastOutput = null;
-
 				return true;
 			}
 
 			var forceexq = exqready && LocalPlayer.Instance.Living.HealthPercent <= ExQForce;
 
-			if ((useq || forceexq) && count >= QCount)
+			if ((useq || forceexq) && count >= QCount && casting)
 			{
 				if (forceexq)
 					ex2Skill.Cast();
@@ -216,6 +263,44 @@ namespace Poloma
 			return true;
 		}
 
+		internal static Character LastRmbTarget;
+		internal static float LastRmbRefresh;
+
+		internal static bool TryRmb()
+		{
+			if (!UseRmb || !rmbSkill.IsReady)
+			{
+				LastRmbTarget = null;
+				return false;
+			}
+
+			if (LastRmbTarget == null && Environment.TickCount - LastRmbRefresh > 250)
+			{
+				LastRmbTarget = EntitiesManager.LocalTeam.FirstOrDefault(p =>
+				{
+					if (!ValidateTarget(p) ||
+						!PlayersMenu.Get<MenuCheckBox>(p.Name + "." +
+													   p.ObjectName))
+						return false;
+					
+					var buffs = p.Buffs;
+					return buffs.Any(b => Debuffs.Any(d => b.ObjectName.EndsWith(d.Key) &&
+														   b.Target?.ObjectName == p.ObjectName &&
+														   RmbMenu.Get<MenuCheckBox>(d.Key) &&
+														   RmbMenu.Get<MenuSlider>(d.Key + ".hp") > p.Living.HealthPercent));
+				});
+				LastRmbRefresh = Environment.TickCount;
+			}
+
+			if (LastRmbTarget == null)
+				return false;
+			
+			LocalPlayer.Aim(LastRmbTarget.MapObject.Position);
+			rmbSkill.Cast();
+			EditingAim = true;
+			return true;
+		}
+		
 		internal static bool TargetOrb()
 		{
 			if (!LmbOrb)
@@ -269,13 +354,14 @@ namespace Poloma
 			if (!LmbAlly)
 				return false;
 
-			var needHeal = CurrentHealthPercent(LocalPlayer.Instance) < 0.98;
+			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName) &&
+			               CurrentHealthPercent(LocalPlayer.Instance) * 100f < FullHealthCheck;
 				
 			var target =
 				TargetSelector
 				.GetAlly(EntitiesManager.LocalTeam.Where(e => !e.IsLocalPlayer &&
 				                                                PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) &&
-																(needHeal || !LmbHealStop || CurrentHealthPercent(e) < 0.98f) &&
+																(needHeal || !LmbHealStop || CurrentHealthPercent(e) * 100f < FullHealthCheck) &&
 				                                                ValidateTarget(e)), TargetingMode.LowestHealth, lmbSkill.Range);
 
 			if (target == null)
@@ -309,6 +395,9 @@ namespace Poloma
 				LmbAlly = ComboMenu.Add(new MenuCheckBox("lmb.ally", "Use On Allies if no Enemy is found"));
 				LmbOrb = ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
 				LmbHealStop = ComboMenu.Add(new MenuCheckBox("lmb.healstop", "Don't Try Heal Full Health Allies", false));
+				FullHealthCheck = ComboMenu.Add(new MenuSlider("lmb.fullhealth",
+				                                               "Ally has Full Health When Recovery Health Percent is More or Equal to HP%",
+				                                               98, 100, 1));
 				AllyKey = ComboMenu.Add(new MenuKeybind("ally.key", "LMB On Allies", KeyCode.X));
 				EnemyKey = ComboMenu.Add(new MenuKeybind("enemy.key", "LMB On Enemies", KeyCode.V));
 				LmbTo = ComboMenu.Add(new MenuComboBox("lmb.to", "Combo Target Order", 0,
@@ -318,6 +407,7 @@ namespace Poloma
 
 				ComboMenu.AddLabel(" - Q Settings");
 				UseQ = ComboMenu.Add(new MenuCheckBox("use.q", "Use Q"));
+				UseQCasting = ComboMenu.Add(new MenuCheckBox("use.qcasting", "Only Use Q if a Target is Casting", false));
 				QCount = ComboMenu.Add(new MenuIntSlider("use.q.count", "Use Q Enemies", 1, 3, 1));
 				UseExQ = ComboMenu.Add(new MenuCheckBox("use.qex", "Use EX Q"));
 				ExQCount = ComboMenu.Add(new MenuIntSlider("use.qex.count", "Use EX Q Enemies", 2, 3, 1));
@@ -325,11 +415,26 @@ namespace Poloma
 
 				PolomaMenu.Add(ComboMenu);
 
+				RmbMenu = new Menu("rmbMenu", "RMB Settings");
+				RmbMenu.AddLabel("- RMB Settings");
+				UseRmb = RmbMenu.Add(new MenuCheckBox("use.rmb", "Use RMB"));
+				RmbMenu.AddSeparator(10);
+				
+				RmbMenu.AddLabel(" - Debuffs Settings");
+
+				foreach (var debuff in Debuffs)
+				{
+					RmbMenu.AddSeparator(5);
+					RmbMenu.Add(new MenuCheckBox(debuff.Key, InsertBeforeUpperCase(debuff.Key, " "), debuff.Value));
+					RmbMenu.Add(new MenuSlider(debuff.Key + ".hp", "Use if Ally Under HP%", 85, 100, 1));
+				}
+
+				PolomaMenu.Add(RmbMenu);
+
 				PlayersMenu = new Menu("Players", "Targeting");
-
-
+				
 				PolomaMenu.Add(PlayersMenu);
-
+				
 				DrawMenu = new Menu("Drawing", "Drawings");
 				DrawLmb = DrawMenu.Add(new MenuCheckBox("draw.lmb", "Draw LMB Range"));
 				DrawQ = DrawMenu.Add(new MenuCheckBox("draw.q", "Draw Q/EXQ Range"));
@@ -394,8 +499,7 @@ namespace Poloma
 			{
 				return !character.Living.ImmuneToHeals;
 			}
-
-			var car = character?.Living;
+			
 			var spellCol = character.SpellCollision;
 			return !spellCol.IsUnHitable && !spellCol.IsUnTargetable && !character.PhysicsCollision.IsImmaterial &&
 			       !character.HasCCOfType(CCType.Consume) && !character.HasCCOfType(CCType.Parry) &&
