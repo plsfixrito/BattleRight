@@ -1,4 +1,8 @@
-﻿using BattleRight.Core;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using BattleRight.Core;
 using BattleRight.Core.Enumeration;
 using BattleRight.Core.GameObjects;
 using BattleRight.Core.GameObjects.Models;
@@ -8,10 +12,6 @@ using BattleRight.SDK.Enumeration;
 using BattleRight.SDK.UI;
 using BattleRight.SDK.UI.Models;
 using BattleRight.SDK.UI.Values;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
 
 namespace Poloma
@@ -29,21 +29,21 @@ namespace Poloma
 		}
 
 		internal static Dictionary<string, bool> Debuffs = new Dictionary<string, bool>
-														   {
-															   { "Panic", true }, { "Frozen", true }, { "Stun", true },
-															   { "Incapacitate", true }, { "Venom", true },
-															   { "Knockback", false }, { "ShackleDebuff", true },
-															   { "GrimoireOfChaosSurgeDebuff", true }, { "SpellBlock", false },
-															   { "Immobilize", true }, { "Slow", false },
-															   { "DeadlyInjectionBuff", true }, { "CripplingGooDebuff", true },
-															   { "Petrify", true }, { "Silence", false },
-															   { "BrainBugDebuff", true }, { "ScarabDebuff", false },
-															   { "SeismicShockDebuff", false },
-															   { "ClawOfTheWickedKnockback", true },
-															   { "LunarStrikePetrify", true }, { "AstralBuff", true },
-															   { "EntanglingRootsBuff", true }, { "LawBringerInAir", false },
-															   { "SheepTrickDebuff", false }
-														   };
+		                                                   {
+			                                                   { "Panic", true }, { "Frozen", true }, { "Stun", true },
+			                                                   { "Incapacitate", true }, { "Venom", true },
+			                                                   { "Knockback", false }, { "ShackleDebuff", true },
+			                                                   { "GrimoireOfChaosSurgeDebuff", true }, { "SpellBlock", false },
+			                                                   { "Immobilize", true }, { "Slow", false },
+			                                                   { "DeadlyInjectionBuff", true }, { "CripplingGooDebuff", true },
+			                                                   { "Petrify", true }, { "Silence", false },
+			                                                   { "BrainBugDebuff", true }, { "ScarabDebuff", false },
+			                                                   { "SeismicShockDebuff", false },
+			                                                   { "ClawOfTheWickedKnockback", true },
+			                                                   { "LunarStrikePetrify", true }, { "AstralBuff", true },
+			                                                   { "EntanglingRootsBuff", true }, { "LawBringerInAir", false },
+			                                                   { "SheepTrickDebuff", false }
+		                                                   };
 
 		internal static bool IsPoloma;
 		internal static bool EditingAim, StartedCast;
@@ -52,7 +52,7 @@ namespace Poloma
 		internal static Menu PolomaMenu, ComboMenu, RmbMenu, PlayersMenu, DrawMenu;
 
 		internal static MenuCheckBox UseLmb, LmbEnemy, LmbAlly, LmbOrb, LmbHealStop, UseRmb, UseQ, UseQCasting, UseExQ,
-									 DrawLmb, DrawQ, DrawAim;
+		                             DrawLmb, DrawQ, DrawAim;
 
 		internal static MenuKeybind ComboKey, AllyKey, EnemyKey;
 		internal static MenuComboBox LmbTo;
@@ -72,40 +72,39 @@ namespace Poloma
 				Console.WriteLine("Kappa Poloma: Skills creation failed");
 
 			Game.OnMatchStart += delegate
-								 {
-									 IsPoloma = LocalPlayer.Instance != null &&
-												LocalPlayer.Instance.ChampionEnum == Champion.Poloma;
+			                     {
+				                     IsPoloma = LocalPlayer.Instance != null &&
+				                                LocalPlayer.Instance.ChampionEnum == Champion.Poloma;
 
-									 if (IsPoloma)
-									 {
-										 Game.OnUpdate += GameOnOnUpdate;
-										 Game.OnDraw += GameOnOnDraw;
+				                     if (IsPoloma)
+				                     {
+					                     Game.OnUpdate += GameOnOnUpdate;
+					                     Game.OnDraw += GameOnOnDraw;
 
-										 PlayersMenu.AddLabel(" - Local Team");
-										 foreach (var player in EntitiesManager.LocalTeam)
-											 PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
-																			  "Heal " + player.Name + " (" + player.ObjectName + ")"));
+					                     PlayersMenu.AddLabel(" - Local Team");
+					                     foreach (var player in EntitiesManager.LocalTeam)
+						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						                                                      "Heal " + player.Name + " (" + player.ObjectName + ")"));
 
-										 PlayersMenu.AddSeparator(5);
-										 PlayersMenu.AddLabel(" - Enemy Team");
-										 foreach (var player in EntitiesManager.EnemyTeam)
-											 PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
-																			  "Target " + player.Name + " (" + player.ObjectName + ")"));
-									 }
-									 else
-									 {
-										 Game.OnUpdate -= GameOnOnUpdate;
-										 Game.OnDraw -= GameOnOnDraw;
-									 }
-								 };
+					                     PlayersMenu.AddSeparator(5);
+					                     PlayersMenu.AddLabel(" - Enemy Team");
+					                     foreach (var player in EntitiesManager.EnemyTeam)
+						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						                                                      "Target " + player.Name + " (" + player.ObjectName + ")"));
+				                     } else
+				                     {
+					                     Game.OnUpdate -= GameOnOnUpdate;
+					                     Game.OnDraw -= GameOnOnDraw;
+				                     }
+			                     };
 			Game.OnMatchEnd += delegate
-							   {
-								   Game.OnUpdate -= GameOnOnUpdate;
-								   Game.OnDraw -= GameOnOnDraw;
-								   var children = PlayersMenu.Children.ToList();
-								   foreach (var child in children)
-									   PlayersMenu.RemoveItem(child.Name);
-							   };
+			                   {
+				                   Game.OnUpdate -= GameOnOnUpdate;
+				                   Game.OnDraw -= GameOnOnDraw;
+				                   var children = PlayersMenu.Children.ToList();
+				                   foreach (var child in children)
+					                   PlayersMenu.RemoveItem(child.Name);
+			                   };
 		}
 
 		public void OnUnload()
@@ -130,7 +129,7 @@ namespace Poloma
 		private void GameOnOnUpdate(EventArgs args)
 		{
 			if (LocalPlayer.Instance == null || !LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
-				LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) || LocalPlayer.Instance.HasCc("PANIC"))
+			    LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) || LocalPlayer.Instance.HasCc("PANIC"))
 			{
 				AbortMission();
 
@@ -183,27 +182,26 @@ namespace Poloma
 
 			var casting = false;
 			var count = EntitiesManager.EnemyTeam?.Count(e =>
-														 {
-															 var ret = e.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
-																	   !e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
-																	   !e.SpellCollision.IsUnHitable &&
-																	   !e.SpellCollision.IsUnTargetable;
+			                                             {
+				                                             var ret = e.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
+				                                                       !e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
+				                                                       !e.SpellCollision.IsUnHitable &&
+				                                                       !e.SpellCollision.IsUnTargetable;
 
-															 if (!ret)
-																 return false;
+				                                             if (!ret)
+					                                             return false;
 
-															 if (UseQCasting)
-															 {
-																 if (!casting)
-																	 casting = e.IsChanneling || e.AbilitySystem.IsCasting;
-															 }
-															 else
-															 {
-																 casting = true;
-															 }
+				                                             if (UseQCasting)
+				                                             {
+					                                             if (!casting)
+						                                             casting = e.IsChanneling || e.AbilitySystem.IsCasting;
+				                                             } else
+				                                             {
+					                                             casting = true;
+				                                             }
 
-															 return true;
-														 });
+				                                             return true;
+			                                             });
 
 			if (useexq && count >= ExQCount)
 			{
@@ -236,7 +234,7 @@ namespace Poloma
 			if (!UseLmb || !lmbSkill.IsReady)
 				return false;
 
-			switch ((TargetingOrder)LmbTo.CurrentValue)
+			switch((TargetingOrder) LmbTo.CurrentValue)
 			{
 				case TargetingOrder.AllyEnemyOrb:
 
@@ -281,17 +279,17 @@ namespace Poloma
 			{
 				LastRmbTarget = EntitiesManager.LocalTeam?
 				.FirstOrDefault(p =>
-								{
-									if (!ValidateTarget(p) || !PlayersMenu.Get<MenuCheckBox>(p.Name + "." + p.ObjectName))
-										return false;
+				                {
+					                if (!ValidateTarget(p) || !PlayersMenu.Get<MenuCheckBox>(p.Name + "." + p.ObjectName))
+						                return false;
 
-									var buffs = p.Buffs;
+					                var buffs = p.Buffs;
 
-									return buffs.Any(b => Debuffs.Any(d => b.ObjectName.EndsWith(d.Key) &&
-																		   b.Target?.ObjectName == p.ObjectName &&
-																		   RmbMenu.Get<MenuCheckBox>(d.Key) &&
-																		   RmbMenu.Get<MenuSlider>(d.Key + ".hp") > p.Living.HealthPercent));
-								});
+					                return buffs.Any(b => Debuffs.Any(d => b.ObjectName.EndsWith(d.Key) && 
+					                                                       b.Target?.ObjectName == p.ObjectName && 
+					                                                       RmbMenu.Get<MenuCheckBox>(d.Key) &&
+					                                                       RmbMenu.Get<MenuSlider>(d.Key + ".hp") > p.Living.HealthPercent));
+				                });
 				LastRmbRefresh = Environment.TickCount;
 			}
 
@@ -313,7 +311,7 @@ namespace Poloma
 			var orb = EntitiesManager.CenterOrb;
 
 			if (orb == null || !orb.IsValid || orb.Get<LivingObject>().IsDead ||
-				!(orb.Get<MapGameObject>().Position.Distance(LocalPlayer.Instance) < lmbSkill.Range))
+			    !(orb.Get<MapGameObject>().Position.Distance(LocalPlayer.Instance) < lmbSkill.Range))
 				return false;
 
 			LocalPlayer.Aim(orb.Get<MapGameObject>().Position);
@@ -332,9 +330,9 @@ namespace Poloma
 			var target =
 				TargetSelector
 				.GetTarget(EntitiesManager.EnemyTeam?.Where(e => PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) &&
-																 ValidateTarget(e) &&
-																 !(LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, e)).CollisionResult.IsColliding),
-						   TargetingMode.LowestHealth, lmbSkill.Range);
+				                                                 ValidateTarget(e) &&
+				                                                 !(LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, e)).CollisionResult.IsColliding),
+				           TargetingMode.LowestHealth, lmbSkill.Range);
 
 			if (target == null)
 				return false;
@@ -359,15 +357,15 @@ namespace Poloma
 				return false;
 
 			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName) &&
-						   CurrentHealthPercent(LocalPlayer.Instance) * 100f < FullHealthCheck;
+			               CurrentHealthPercent(LocalPlayer.Instance) * 100f < FullHealthCheck;
 
 			var target =
 				TargetSelector
 				.GetAlly(EntitiesManager.LocalTeam?.Where(e => !e.IsLocalPlayer &&
-															   PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) &&
-															   (needHeal || !LmbHealStop || CurrentHealthPercent(e) * 100f < FullHealthCheck) &&
-															   ValidateTarget(e)),
-						 TargetingMode.LowestHealth, lmbSkill.Range);
+				                                               PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) && 
+				                                               (needHeal || !LmbHealStop || CurrentHealthPercent(e) * 100f < FullHealthCheck) &&
+				                                               ValidateTarget(e)),
+				         TargetingMode.LowestHealth, lmbSkill.Range);
 
 			if (target == null)
 				return false;
@@ -401,13 +399,13 @@ namespace Poloma
 				LmbOrb = ComboMenu.Add(new MenuCheckBox("lmb.orb", "Use On Orb if no Ally/Enemy is found"));
 				LmbHealStop = ComboMenu.Add(new MenuCheckBox("lmb.healstop", "Don't Try Heal Full Health Allies", false));
 				FullHealthCheck = ComboMenu.Add(new MenuSlider("lmb.fullhealth",
-															   "Ally has Full Health When Recovery Health Percent is More or Equal to HP%",
-															   98, 100, 1));
+				                                               "Ally has Full Health When Recovery Health Percent is More or Equal to HP%",
+				                                               98, 100, 1));
 				AllyKey = ComboMenu.Add(new MenuKeybind("ally.key", "LMB On Allies", KeyCode.X));
 				EnemyKey = ComboMenu.Add(new MenuKeybind("enemy.key", "LMB On Enemies", KeyCode.V));
 				LmbTo = ComboMenu.Add(new MenuComboBox("lmb.to", "Combo Target Order", 0,
-													   Enum.GetNames(typeof(TargetingOrder))
-														   .Select(s => InsertBeforeUpperCase(s, " > ")).ToArray()));
+				                                       Enum.GetNames(typeof(TargetingOrder))
+				                                           .Select(s => InsertBeforeUpperCase(s, " > ")).ToArray()));
 				ComboMenu.AddSeparator(10);
 
 				ComboMenu.AddLabel(" - Q Settings");
@@ -448,8 +446,7 @@ namespace Poloma
 				PolomaMenu.Add(DrawMenu);
 
 				return true;
-			}
-			catch (Exception e)
+			} catch (Exception e)
 			{
 				Console.WriteLine(e);
 
@@ -468,11 +465,10 @@ namespace Poloma
 				eSkill = new SkillBase(AbilitySlot.Ability5, SkillType.Line, 9.5f, 4, .2f);
 				fSkill = new SkillBase(AbilitySlot.Ability6, SkillType.Circle, 7f, int.MaxValue, .2f, 25f);
 				ex2Skill = new SkillBase(AbilitySlot.EXAbility2, SkillType.Circle, 2.5f, int.MaxValue, .2f, 100)
-				{ GetAbilityHudByName = "SoulDrainAbility" };
+				           { GetAbilityHudByName = "SoulDrainAbility" };
 
 				return true;
-			}
-			catch (Exception e)
+			} catch (Exception e)
 			{
 				Console.WriteLine(e);
 
@@ -508,8 +504,8 @@ namespace Poloma
 			var spellCol = character.SpellCollision;
 
 			return !spellCol.IsUnHitable && !spellCol.IsUnTargetable && !character.PhysicsCollision.IsImmaterial &&
-				   !character.HasCCOfType(CCType.Consume) && !character.HasCCOfType(CCType.Parry) &&
-				   !character.HasCCOfType(CCType.Counter);
+			       !character.HasCCOfType(CCType.Consume) && !character.HasCCOfType(CCType.Parry) &&
+			       !character.HasCCOfType(CCType.Counter);
 		}
 
 		internal static float CurrentHealthPercent(Character character)
