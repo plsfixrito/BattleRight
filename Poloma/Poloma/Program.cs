@@ -101,7 +101,7 @@ namespace Poloma
 			                   {
 				                   Game.OnUpdate -= GameOnOnUpdate;
 				                   Game.OnDraw -= GameOnOnDraw;
-				                   var children = PlayersMenu.Children;
+				                   var children = PlayersMenu.Children.ToList();
 				                   foreach (var child in children)
 					                   PlayersMenu.RemoveItem(child.Name);
 			                   };
