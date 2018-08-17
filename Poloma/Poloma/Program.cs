@@ -83,13 +83,13 @@ namespace Poloma
 
 					                     PlayersMenu.AddLabel(" - Local Team");
 					                     foreach (var player in EntitiesManager.LocalTeam)
-						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName + "." + player.Team,
 						                                                      "Heal " + player.Name + " (" + player.ObjectName + ")"));
 
 					                     PlayersMenu.AddSeparator(5);
 					                     PlayersMenu.AddLabel(" - Enemy Team");
 					                     foreach (var player in EntitiesManager.EnemyTeam)
-						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						                     PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName + "." + player.Team,
 						                                                      "Target " + player.Name + " (" + player.ObjectName + ")"));
 				                     } else
 				                     {
@@ -101,7 +101,7 @@ namespace Poloma
 			                   {
 				                   Game.OnUpdate -= GameOnOnUpdate;
 				                   Game.OnDraw -= GameOnOnDraw;
-				                   var children = PlayersMenu.Children.ToList();
+				                   var children = PlayersMenu.Children;
 				                   foreach (var child in children)
 					                   PlayersMenu.RemoveItem(child.Name);
 			                   };
@@ -113,6 +113,9 @@ namespace Poloma
 
 		private void GameOnOnDraw(EventArgs args)
 		{
+			if(LocalPlayer.Instance == null)
+				return;
+
 			if (DrawLmb)
 				Drawing.DrawCircle(LocalPlayer.Instance.MapObject.Position, lmbSkill.Range, Color.cyan);
 
@@ -128,8 +131,11 @@ namespace Poloma
 
 		private void GameOnOnUpdate(EventArgs args)
 		{
-			if (LocalPlayer.Instance == null || !LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
-			    LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) || LocalPlayer.Instance.HasCc("PANIC"))
+			if (LocalPlayer.Instance == null ||
+			    LocalPlayer.Instance.Living.IsDead ||
+			    !LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
+			    LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) ||
+			    LocalPlayer.Instance.HasCc("PANIC"))
 			{
 				AbortMission();
 
@@ -268,39 +274,53 @@ namespace Poloma
 
 		internal static bool TryRmb()
 		{
-			if (!UseRmb || !rmbSkill.IsReady)
+			try
 			{
-				LastRmbTarget = null;
+				if (!UseRmb || !rmbSkill.IsReady)
+				{
+					LastRmbTarget = null;
+					return false;
+				}
 
+				if (LastRmbTarget == null || Environment.TickCount - LastRmbRefresh > 250)
+				{
+					LastRmbTarget = EntitiesManager.LocalTeam?
+					.FirstOrDefault(p =>
+					                {
+						                if (!ValidateTarget(p))
+							                return false;
+
+						                var buffs = p.Buffs;
+
+						                return buffs == null  || 
+						                       buffs.Any(b => b != null &&
+						                                      Debuffs.Any(d =>
+						                                                  {
+							                                                  var targetName = b.Target?.ObjectName;
+							                                                  if (string.IsNullOrEmpty(targetName))
+								                                                  return false;
+
+							                                                  return b.ObjectName.EndsWith(d.Key) &&
+							                                                         targetName == p.ObjectName && 
+							                                                         RmbMenu.Get<MenuCheckBox>(d.Key) &&
+							                                                         RmbMenu.Get<MenuSlider>(d.Key + ".hp") > p.Living.HealthPercent;
+						                                                  }));
+					                });
+					LastRmbRefresh = Environment.TickCount;
+				}
+
+				if (LastRmbTarget == null)
+					return false;
+
+				LocalPlayer.Aim(LastRmbTarget.MapObject.Position);
+				rmbSkill.Cast();
+				EditingAim = true;
+				return true;
+			} catch (Exception e)
+			{
+				Console.WriteLine(e);
 				return false;
 			}
-
-			if (LastRmbTarget == null && Environment.TickCount - LastRmbRefresh > 250)
-			{
-				LastRmbTarget = EntitiesManager.LocalTeam?
-				.FirstOrDefault(p =>
-				                {
-					                if (!ValidateTarget(p) || !PlayersMenu.Get<MenuCheckBox>(p.Name + "." + p.ObjectName))
-						                return false;
-
-					                var buffs = p.Buffs;
-
-					                return buffs.Any(b => Debuffs.Any(d => b.ObjectName.EndsWith(d.Key) && 
-					                                                       b.Target?.ObjectName == p.ObjectName && 
-					                                                       RmbMenu.Get<MenuCheckBox>(d.Key) &&
-					                                                       RmbMenu.Get<MenuSlider>(d.Key + ".hp") > p.Living.HealthPercent));
-				                });
-				LastRmbRefresh = Environment.TickCount;
-			}
-
-			if (LastRmbTarget == null)
-				return false;
-
-			LocalPlayer.Aim(LastRmbTarget.MapObject.Position);
-			rmbSkill.Cast();
-			EditingAim = true;
-
-			return true;
 		}
 
 		internal static bool TargetOrb()
@@ -329,8 +349,7 @@ namespace Poloma
 
 			var target =
 				TargetSelector
-				.GetTarget(EntitiesManager.EnemyTeam?.Where(e => PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) &&
-				                                                 ValidateTarget(e) &&
+				.GetTarget(EntitiesManager.EnemyTeam?.Where(e => ValidateTarget(e) &&
 				                                                 !(LastOutput = lmbSkill.GetPrediction(LocalPlayer.Instance, e)).CollisionResult.IsColliding),
 				           TargetingMode.LowestHealth, lmbSkill.Range);
 
@@ -356,13 +375,12 @@ namespace Poloma
 			if (!LmbAlly)
 				return false;
 
-			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName) &&
+			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName + "." + LocalPlayer.Instance.Team) &&
 			               CurrentHealthPercent(LocalPlayer.Instance) * 100f < FullHealthCheck;
 
 			var target =
 				TargetSelector
 				.GetAlly(EntitiesManager.LocalTeam?.Where(e => !e.IsLocalPlayer &&
-				                                               PlayersMenu.Get<MenuCheckBox>(e.Name + "." + e.ObjectName) && 
 				                                               (needHeal || !LmbHealStop || CurrentHealthPercent(e) * 100f < FullHealthCheck) &&
 				                                               ValidateTarget(e)),
 				         TargetingMode.LowestHealth, lmbSkill.Range);
@@ -496,10 +514,11 @@ namespace Poloma
 
 		internal static bool ValidateTarget(Character character)
 		{
-			if (character == null || character.Living.IsDead)
+			if (character == null || character.Living.IsDead || !PlayersMenu.Get<MenuCheckBox>(character.Name + "." + character.ObjectName + "." + character.Team))
 				return false;
 
-			if (character.IsAlly) return !character.Living.ImmuneToHeals;
+			if (character.IsAlly)
+				return !character.Living.ImmuneToHeals;
 
 			var spellCol = character.SpellCollision;
 
