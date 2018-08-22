@@ -192,8 +192,7 @@ namespace Poloma
 			var casting = false;
 			var count = EntitiesManager.EnemyTeam?.Count(e =>
 			{
-				var ret = qSkill.GetPrediction(LocalPlayer.Instance, e).PredictedPosition
-				.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
+				var ret = e.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
 				!e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
 				!e.SpellCollision.IsUnHitable &&
 				!e.SpellCollision.IsUnTargetable;
