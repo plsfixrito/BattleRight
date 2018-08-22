@@ -85,13 +85,13 @@ namespace Poloma
 
 					PlayersMenu.AddLabel(" - Local Team");
 					foreach (var player in EntitiesManager.LocalTeam)
-						PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.{player.Team}",
 							"Heal " + player.Name + " (" + player.ObjectName + ")"));
 
 					PlayersMenu.AddSeparator(5);
 					PlayersMenu.AddLabel(" - Enemy Team");
 					foreach (var player in EntitiesManager.EnemyTeam)
-						PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
+						PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.{player.Team}",
 							"Target " + player.Name + " (" + player.ObjectName + ")"));
 				} else
 				{
@@ -138,7 +138,8 @@ namespace Poloma
 			    LocalPlayer.Instance.Living.IsDead ||
 			    !LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
 			    LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) ||
-			    LocalPlayer.Instance.HasCc("PANIC"))
+			    LocalPlayer.Instance.HasCc("PANIC") ||
+				LocalPlayer.Instance.Buffs.Any(b => b.IsSpellBlock))
 			{
 				AbortMission();
 
@@ -376,7 +377,7 @@ namespace Poloma
 			if (!LmbAlly)
 				return false;
 
-			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName) &&
+			var needHeal = PlayersMenu.Get<MenuCheckBox>($"{LocalPlayer.Instance.Name}.{LocalPlayer.Instance.ObjectName}.{LocalPlayer.Instance.Team}") &&
 			               CurrentHealthPercent(LocalPlayer.Instance) * 100f < FullHealthCheck;
 
 			var target =
@@ -482,10 +483,10 @@ namespace Poloma
 				lmbSkill = new SkillBase(AbilitySlot.Ability1, SkillType.Line, 8.5f, 15.5f, .2f);
 				rmbSkill = new SkillBase(AbilitySlot.Ability2, SkillType.Circle, int.MaxValue, 4, .2f);
 				spaceSkill = new SkillBase(AbilitySlot.Ability3, SkillType.Line, 9f, 4, .2f);
-				qSkill = new SkillBase(AbilitySlot.Ability4, SkillType.Circle, 2.5f, int.MaxValue, .2f, 100);
+				qSkill = new SkillBase(AbilitySlot.Ability4, SkillType.Circle, 2.5f, int.MaxValue, .2f, 0.1f);
 				eSkill = new SkillBase(AbilitySlot.Ability5, SkillType.Line, 9f, 17.5f, .4f);
-				fSkill = new SkillBase(AbilitySlot.Ability6, SkillType.Circle, 7f, int.MaxValue, .2f, 25f);
-				ex2Skill = new SkillBase(AbilitySlot.EXAbility2, SkillType.Circle, 2.5f, int.MaxValue, .2f, 100)
+				fSkill = new SkillBase(AbilitySlot.Ability6, SkillType.Circle, 7f, int.MaxValue, .2f, .25f);
+				ex2Skill = new SkillBase(AbilitySlot.EXAbility2, SkillType.Circle, 2.5f, int.MaxValue, .2f, 0.1f)
 				           { GetAbilityHudByName = "SoulDrainAbility" };
 
 				return true;
@@ -519,7 +520,7 @@ namespace Poloma
 		{
 			if (character == null ||
 				character.Living.IsDead ||
-				!PlayersMenu.Get<MenuCheckBox>(character.Name + "." + character.ObjectName))
+				!PlayersMenu.Get<MenuCheckBox>($"{character.Name}.{character.ObjectName}.{character.Team}"))
 				return false;
 
 			if (character.IsAlly)
