@@ -44,6 +44,7 @@ namespace Poloma
 			{ "EntanglingRootsBuff", true }, { "LawBringerInAir", false },
 			{ "SheepTrickDebuff", false }
 		};
+		internal static string[] ReflectCc = { "GUST", "BULWARK", "RADIANT SHIELD" };
 
 		internal static bool IsPoloma;
 		internal static bool EditingAim, StartedCast;
@@ -84,13 +85,13 @@ namespace Poloma
 
 					PlayersMenu.AddLabel(" - Local Team");
 					foreach (var player in EntitiesManager.LocalTeam)
-						PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName + "." + player.IsAlly,
+						PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
 							"Heal " + player.Name + " (" + player.ObjectName + ")"));
 
 					PlayersMenu.AddSeparator(5);
 					PlayersMenu.AddLabel(" - Enemy Team");
 					foreach (var player in EntitiesManager.EnemyTeam)
-						PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName + "." + player.IsAlly,
+						PlayersMenu.Add(new MenuCheckBox(player.Name + "." + player.ObjectName,
 							"Target " + player.Name + " (" + player.ObjectName + ")"));
 				} else
 				{
@@ -190,7 +191,8 @@ namespace Poloma
 			var casting = false;
 			var count = EntitiesManager.EnemyTeam?.Count(e =>
 			{
-				var ret = e.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
+				var ret = qSkill.GetPrediction(LocalPlayer.Instance, e).PredictedPosition
+				.Distance(LocalPlayer.Instance) <= qSkill.Range * 0.9f &&
 				!e.Living.IsDead && !e.PhysicsCollision.IsImmaterial &&
 				!e.SpellCollision.IsUnHitable &&
 				!e.SpellCollision.IsUnTargetable;
@@ -374,7 +376,7 @@ namespace Poloma
 			if (!LmbAlly)
 				return false;
 
-			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName + "." + LocalPlayer.Instance.IsAlly) &&
+			var needHeal = PlayersMenu.Get<MenuCheckBox>(LocalPlayer.Instance.Name + "." + LocalPlayer.Instance.ObjectName) &&
 			               CurrentHealthPercent(LocalPlayer.Instance) * 100f < FullHealthCheck;
 
 			var target =
@@ -517,7 +519,7 @@ namespace Poloma
 		{
 			if (character == null ||
 				character.Living.IsDead ||
-				!PlayersMenu.Get<MenuCheckBox>(character.Name + "." + character.ObjectName + "." + character.IsAlly))
+				!PlayersMenu.Get<MenuCheckBox>(character.Name + "." + character.ObjectName))
 				return false;
 
 			if (character.IsAlly)
@@ -527,10 +529,11 @@ namespace Poloma
 
 			return !spellCol.IsUnHitable && !spellCol.IsUnTargetable &&
 				   !character.PhysicsCollision.IsImmaterial &&
-				   !character.IsCountering &&
 			       !character.HasCCOfType(CCType.Consume) &&
 				   !character.HasCCOfType(CCType.Parry) &&
-			       !character.HasCCOfType(CCType.Counter);
+			       !character.HasCCOfType(CCType.Counter) && 
+				   !ReflectCc.Any(c => character.HasCc(c)) &&
+				   !character.IsCountering;
 		}
 
 		internal static float CurrentHealthPercent(Character character)
