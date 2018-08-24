@@ -47,7 +47,7 @@ namespace Poloma
 		internal static string[] Debuffs = { };
 		internal static string[] ReflectCc = { "GUST", "BULWARK", "RADIANT SHIELD" };
 
-		internal static bool IsPoloma;
+		internal static bool IsPoloma, Started;
 		internal static bool EditingAim, StartedCast;
 		internal static bool CastingE => LocalPlayer.Instance != null && LocalPlayer.Instance.AbilitySystem.CastingAbilityIndex == 9;
 
@@ -76,41 +76,58 @@ namespace Poloma
 				Console.WriteLine("Kappa Poloma: Skills creation failed");
 
             Game.OnMatchStateUpdate += delegate(MatchStateUpdate args)
-                                       {
-	                                       if (args.NewMatchState == MatchState.BattleritePicking)
-										   {
-											   if (EntitiesManager.LocalTeam != null)
-												   foreach (var player in EntitiesManager.LocalTeam)
-													   if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Ally"))
-														   PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
-														                                    "Heal " + player.Name + " (" + player.ObjectName + ")"));
+            {
+				if(!IsPoloma)
+					return;
 
-											   if (EntitiesManager.EnemyTeam != null)
-											   {
-												   var reflect = new List<string>();
-												   foreach (var player in EntitiesManager.EnemyTeam)
-												   {
-													   if(PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Enemy"))
-													   PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
-													                                    "Target " + player.Name + " (" + player.ObjectName + ")"));
+	            if (args.NewMatchState != MatchState.BattleritePicking && !GameHudBase.IsInPractice)
+		            return;
 
-													   switch (player.ChampionEnum)
-													   {
-														   case Champion.Ulric:
-															   reflect.Add("RADIANT SHIELD");
-															   break;
-														   case Champion.Bakko:
-															   reflect.Add("BULWARK");
-															   break;
-														   case Champion.Blossom:
-															   reflect.Add("GUST");
-															   break;
-													   }
-												   }
-												   ReflectCc = reflect.ToArray();
-											   }
-										   }
-                                       };
+	            if (EntitiesManager.LocalTeam != null)
+	            {
+		            PlayersMenu.AddLabel("- Local Team");
+		            foreach (var player in EntitiesManager.LocalTeam)
+		            {
+			            PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
+			                                             "Heal " + player.Name + " (" + player.ObjectName + ")"));
+		            }
+
+		            PlayersMenu.AddSeparator(5);
+	            }
+
+	            if (EntitiesManager.EnemyTeam != null)
+	            {
+		            PlayersMenu.AddLabel("- Enemy Team");
+		            var reflect = new List<string>();
+		            foreach (var player in EntitiesManager.EnemyTeam)
+		            {
+			            PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
+			                                             "Target " + player.Name + " (" + player.ObjectName + ")"));
+
+			            switch (player.ChampionEnum)
+							{
+								case Champion.Ulric:
+									reflect.Add("RADIANT SHIELD");
+									break;
+								case Champion.Bakko:
+									reflect.Add("BULWARK");
+									break;
+								case Champion.Blossom:
+									reflect.Add("GUST");
+									break;
+								case Champion.Oldur:
+									reflect.Add("TIME BENDER");
+									break;
+								case Champion.Thorn:
+									reflect.Add("BARBED HUSK");
+									break;
+							}
+		            }
+		            ReflectCc = reflect.ToArray();
+	            }
+
+	            Started = true;
+			};
 			Game.OnMatchStart += delegate
 			{
 				IsPoloma = LocalPlayer.Instance != null &&
@@ -120,36 +137,6 @@ namespace Poloma
 				{
 					Game.OnUpdate += GameOnOnUpdate;
 					Game.OnDraw += GameOnOnDraw;
-					
-					if(EntitiesManager.LocalTeam != null)
-					foreach (var player in EntitiesManager.LocalTeam)
-						PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
-							"Heal " + player.Name + " (" + player.ObjectName + ")"));
-
-					var reflect = new List<string>();
-					if (EntitiesManager.EnemyTeam != null)
-					{
-						foreach (var player in EntitiesManager.EnemyTeam)
-						{
-							PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
-							                                 "Target " + player.Name + " (" + player.ObjectName + ")"));
-
-							switch (player.ChampionEnum)
-							{
-								case Champion.Ulric:
-										reflect.Add("RADIANT SHIELD");
-									break;
-								case Champion.Bakko:
-									reflect.Add("BULWARK");
-									break;
-								case Champion.Blossom:
-									reflect.Add("GUST");
-									break;
-							}
-						}
-					}
-
-					ReflectCc = reflect.ToArray();
 				} else
 				{
 					Game.OnUpdate -= GameOnOnUpdate;
@@ -191,7 +178,8 @@ namespace Poloma
 
 		private void GameOnOnUpdate(EventArgs args)
 		{
-			if (LocalPlayer.Instance == null)
+			if (LocalPlayer.Instance == null ||
+			    !Started)
 				return;
 			
 			if (LocalPlayer.Instance.Living.IsDead ||
