@@ -47,7 +47,7 @@ namespace Poloma
 		internal static string[] Debuffs = { };
 		internal static string[] ReflectCc = { "GUST", "BULWARK", "RADIANT SHIELD", "TIME BENDER", "BARBED HUSK" };
 
-		internal static bool IsPoloma;
+		internal static bool IsPoloma, Started;
 		internal static bool EditingAim, StartedCast;
 		internal static bool CastingE => LocalPlayer.Instance != null && LocalPlayer.Instance.AbilitySystem.CastingAbilityIndex == 9;
 
@@ -69,6 +69,7 @@ namespace Poloma
 
 		public void OnInit()
 		{
+			Started = false;
 			Debuffs = DebuffsDic.Keys.ToArray();
 			if (!CreateMenu())
 				Console.WriteLine("Kappa Poloma: Menu creation failed");
@@ -76,11 +77,18 @@ namespace Poloma
 				Console.WriteLine("Kappa Poloma: Skills creation failed");
 
             Game.OnMatchStateUpdate += delegate(MatchStateUpdate args)
-            {
-				if(!IsPoloma)
+			{
+				if(Started)
 					return;
+				if (!(IsPoloma = LocalPlayer.Instance != null &&
+				                 LocalPlayer.Instance.ChampionEnum == Champion.Poloma))
+				{
+					Game.OnUpdate -= GameOnOnUpdate;
+					Game.OnDraw -= GameOnOnDraw;
+					return;
+				}
 				
-	            if (EntitiesManager.LocalTeam != null)
+				if (EntitiesManager.LocalTeam != null)
 	            {
 		            foreach (var player in EntitiesManager.LocalTeam)
 					{
@@ -98,48 +106,15 @@ namespace Poloma
 				            PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
 				                                             "Target " + player.Name + " (" + player.ObjectName + ")"));
 		            }
-	            }
-            };
-			Game.OnMatchStart += delegate
-			{
-				IsPoloma = LocalPlayer.Instance != null &&
-				LocalPlayer.Instance.ChampionEnum == Champion.Poloma;
-
-				if (IsPoloma)
-				{
-					if (EntitiesManager.LocalTeam != null)
-					{
-						foreach (var player in EntitiesManager.LocalTeam)
-						{
-							if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Ally"))
-								PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
-								                                 "Heal " + player.Name + " (" + player.ObjectName + ")"));
-						}
-
-						PlayersMenu.AddSeparator(5);
-					}
-
-					if (EntitiesManager.EnemyTeam != null)
-					{
-						foreach (var player in EntitiesManager.EnemyTeam)
-						{
-							if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Enemy"))
-								PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
-								                                 "Target " + player.Name + " (" + player.ObjectName + ")"));
-							
-						}
-					}
-
-					Game.OnUpdate += GameOnOnUpdate;
-					Game.OnDraw += GameOnOnDraw;
-				} else
-				{
-					Game.OnUpdate -= GameOnOnUpdate;
-					Game.OnDraw -= GameOnOnDraw;
 				}
+
+				Game.OnUpdate += GameOnOnUpdate;
+				Game.OnDraw += GameOnOnDraw;
+				Started = true;
 			};
 			Game.OnMatchEnd += delegate
 			{
+				Started = false;
 				Game.OnUpdate -= GameOnOnUpdate;
 				Game.OnDraw -= GameOnOnDraw;
 				var children = PlayersMenu.Children;
