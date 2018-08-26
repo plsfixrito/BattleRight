@@ -89,25 +89,30 @@ namespace Poloma
 				}
 				
 				if (EntitiesManager.LocalTeam != null)
-	            {
-		            foreach (var player in EntitiesManager.LocalTeam)
+				{
+					//PlayersMenu.AddLabel("- Local Team");
+
+					foreach (var player in EntitiesManager.LocalTeam)
 					{
 						if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Ally"))
 							PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
 			                                             "Heal " + player.Name + " (" + player.ObjectName + ")"));
 		            }
-	            }
+
+					PlayersMenu.AddSeparator(5);
+				}
 
 	            if (EntitiesManager.EnemyTeam != null)
-	            {
-		            foreach (var player in EntitiesManager.EnemyTeam)
+				{
+					//PlayersMenu.AddLabel("- Enemy Team");
+					foreach (var player in EntitiesManager.EnemyTeam)
 		            {
 			            if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Enemy"))
 				            PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
 				                                             "Target " + player.Name + " (" + player.ObjectName + ")"));
 		            }
 				}
-
+                
 				Game.OnUpdate += GameOnOnUpdate;
 				Game.OnDraw += GameOnOnDraw;
 				Started = true;
@@ -510,7 +515,7 @@ namespace Poloma
 			{
 				if (!LocalPlayer.Instance.HasCC || !LocalPlayer.Instance.CCName.StartsWith("OTHER"))
 					LocalPlayer.PressAbility(AbilitySlot.Interrupt, true);
-				StartedCast = false;
+				StartedCast = !LocalPlayer.Instance.AbilitySystem.IsCasting;
 			}
 
 			if (EditingAim)
@@ -539,8 +544,8 @@ namespace Poloma
 			       !character.HasCCOfType(CCType.Consume) &&
 				   !character.HasCCOfType(CCType.Parry) &&
 			       !character.HasCCOfType(CCType.Counter) && 
-				   !ReflectCc.Any(character.HasCc) &&
-				   !character.IsCountering;
+				   !character.Buffs.Any(b => b.IsConsume || b.IsCounter || b.IsReflect) &&
+				   !ReflectCc.Any(character.HasCc);
 		}
 
 		internal static float CurrentHealthPercent(Character character)
