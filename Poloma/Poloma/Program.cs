@@ -76,46 +76,11 @@ namespace Poloma
 			if (!CreateSkills())
 				Console.WriteLine("Kappa Poloma: Skills creation failed");
 
-            Game.OnMatchStateUpdate += delegate(MatchStateUpdate args)
+			Game.OnMatchStateUpdate += LoadInGame;
+			Game.OnMatchStart += (args) =>
 			{
-				if(Started)
-					return;
-				if (!(IsPoloma = LocalPlayer.Instance != null &&
-				                 LocalPlayer.Instance.ChampionEnum == Champion.Poloma))
-				{
-					Game.OnUpdate -= GameOnOnUpdate;
-					Game.OnDraw -= GameOnOnDraw;
-					return;
-				}
-				
-				if (EntitiesManager.LocalTeam != null)
-				{
-					//PlayersMenu.AddLabel("- Local Team");
-
-					foreach (var player in EntitiesManager.LocalTeam)
-					{
-						if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Ally"))
-							PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
-			                                             "Heal " + player.Name + " (" + player.ObjectName + ")"));
-		            }
-
-					PlayersMenu.AddSeparator(5);
-				}
-
-	            if (EntitiesManager.EnemyTeam != null)
-				{
-					//PlayersMenu.AddLabel("- Enemy Team");
-					foreach (var player in EntitiesManager.EnemyTeam)
-		            {
-			            if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Enemy"))
-				            PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
-				                                             "Target " + player.Name + " (" + player.ObjectName + ")"));
-		            }
-				}
-                
-				Game.OnUpdate += GameOnOnUpdate;
-				Game.OnDraw += GameOnOnDraw;
-				Started = true;
+				Started = false;
+				LoadInGame(args);
 			};
 			Game.OnMatchEnd += delegate
 			{
@@ -126,6 +91,48 @@ namespace Poloma
 				foreach (var child in children)
 					PlayersMenu.RemoveItem(child.Name);
 			};
+		}
+
+		private void LoadInGame(EventArgs args)
+		{
+			if (Started)
+				return;
+			if (!(IsPoloma = LocalPlayer.Instance != null &&
+							 LocalPlayer.Instance.ChampionEnum == Champion.Poloma))
+			{
+				Game.OnUpdate -= GameOnOnUpdate;
+				Game.OnDraw -= GameOnOnDraw;
+				return;
+			}
+
+			if (EntitiesManager.LocalTeam != null)
+			{
+				//PlayersMenu.AddLabel("- Local Team");
+
+				foreach (var player in EntitiesManager.LocalTeam)
+				{
+					if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Ally"))
+						PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
+													 "Heal " + player.Name + " (" + player.ObjectName + ")"));
+				}
+
+				PlayersMenu.AddSeparator(5);
+			}
+
+			if (EntitiesManager.EnemyTeam != null)
+			{
+				//PlayersMenu.AddLabel("- Enemy Team");
+				foreach (var player in EntitiesManager.EnemyTeam)
+				{
+					if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Enemy"))
+						PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Enemy",
+														 "Target " + player.Name + " (" + player.ObjectName + ")"));
+				}
+			}
+
+			Game.OnUpdate += GameOnOnUpdate;
+			Game.OnDraw += GameOnOnDraw;
+			Started = true;
 		}
 
 		public void OnUnload()
@@ -515,7 +522,7 @@ namespace Poloma
 			{
 				if (!LocalPlayer.Instance.HasCC || !LocalPlayer.Instance.CCName.StartsWith("OTHER"))
 					LocalPlayer.PressAbility(AbilitySlot.Interrupt, true);
-				StartedCast = !LocalPlayer.Instance.AbilitySystem.IsCasting;
+				StartedCast = LocalPlayer.Instance.AbilitySystem.IsCasting;
 			}
 
 			if (EditingAim)
