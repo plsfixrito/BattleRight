@@ -512,7 +512,7 @@ namespace Poloma
 		{
 			try
 			{
-				LmbSkill = new SkillBase(AbilitySlot.Ability1, SkillType.Line, 8.5f, 15.5f, .2f);
+				LmbSkill = new SkillBase(AbilitySlot.Ability1, SkillType.Line, 8.5f, 15f, .2f);
 				RmbSkill = new SkillBase(AbilitySlot.Ability2, SkillType.Circle, int.MaxValue, 4, .2f);
 				SpaceSkill = new SkillBase(AbilitySlot.Ability3, SkillType.Line, 9f, 4, .2f);
 				QSkill = new SkillBase(AbilitySlot.Ability4, SkillType.Circle, 2.5f, int.MaxValue, .2f, 0.1f);
