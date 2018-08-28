@@ -52,7 +52,7 @@ namespace Poloma
 		internal static bool CastingE => LocalPlayer.Instance != null && LocalPlayer.Instance.AbilitySystem.CastingAbilityIndex == 9;
 
 		internal static SkillBase LmbSkill, RmbSkill, SpaceSkill, QSkill, ESkill, RSkill, Ex1Skill, Ex2Skill, FSkill;
-		internal static Menu PolomaMenu, ComboMenu, RmbMenu, PlayersMenu, DrawMenu;
+		internal static Menu PolomaMenu, ComboMenu, RmbMenu, RmbTarget, PlayersMenu, DrawMenu;
 
 		internal static MenuCheckBox UseLmb, LmbEnemy, LmbAlly, LmbOrb, LmbHealStop, UseRmb, UseQ, UseQCasting, UseExQ,
 		                             DrawLmb, DrawQ, DrawAim;
@@ -90,6 +90,8 @@ namespace Poloma
 				var children = PlayersMenu.Children;
 				foreach (var child in children)
 					PlayersMenu.RemoveItem(child.Name);
+				foreach (var child in RmbTarget.Children)
+					RmbTarget.RemoveItem(child.Name);
 			};
 		}
 
@@ -114,6 +116,10 @@ namespace Poloma
 					if (PlayersMenu.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}.Ally"))
 						PlayersMenu.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}.Ally",
 													 "Heal " + player.Name + " (" + player.ObjectName + ")"));
+
+					if (RmbTarget.Children.All(c => c.Name != $"{player.Name}.{player.ObjectName}"))
+						RmbTarget.Add(new MenuCheckBox($"{player.Name}.{player.ObjectName}",
+					                               "Other side " + $"{player.Name} ({player.ObjectName})"));
 				}
 
 				PlayersMenu.AddSeparator(5);
@@ -164,7 +170,7 @@ namespace Poloma
 				return;
 			
 			if (LocalPlayer.Instance.Living.IsDead ||
-			    !LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
+			    //!LocalPlayer.Instance.AbilitySystem.CanCastAbilities ||
 			    LocalPlayer.Instance.HasCCOfType(CCType.SpellBlock) ||
 			    LocalPlayer.Instance.HasCc("PANIC") ||
 				LocalPlayer.Instance.Buffs.Any(b => b.IsSpellBlock))
@@ -269,10 +275,10 @@ namespace Poloma
 			if (CastingE)
 				return TargetEnemy(ESkill) || TargetOrb(ESkill);
 
-			if (!UseLmb || !LmbSkill.IsReady)
-				return false;
+			if (!UseLmb)
+				return !LmbSkill.IsReady && StartedCast;
 
-			switch((TargetingOrder) LmbTo.CurrentValue)
+			switch ((TargetingOrder) LmbTo.CurrentValue)
 			{
 				case TargetingOrder.AllyEnemyOrb:
 					return TargetAlly() || TargetEnemy(LmbSkill) || TargetOrb(LmbSkill);
@@ -312,7 +318,11 @@ namespace Poloma
 				{
 					LastRmbTarget = EntitiesManager.LocalTeam?.FirstOrDefault(p =>
 					{
-						if (!ValidateTarget(p))
+						if (p == null || p.Living.IsDead ||
+						    p.Living.ImmuneToHeals || p.Living.IsInvulnerable ||
+						    !RmbTarget.Get<MenuCheckBox>($"{p.Name}.{p.ObjectName}") ||
+						    p.SpellCollision.IsUnHitable || p.SpellCollision.IsUnTargetable ||
+						    p.HasBuffOfType(BuffType.Shield))
 							return false;
 
 						var buffs = p.Buffs;
@@ -473,6 +483,10 @@ namespace Poloma
 				}
 
 				PolomaMenu.Add(RmbMenu);
+
+				RmbTarget = new Menu("rmb.Targets", "RMB Targets");
+
+				PolomaMenu.Add(RmbTarget);
 
 				PlayersMenu = new Menu("Players", "Targeting");
 
