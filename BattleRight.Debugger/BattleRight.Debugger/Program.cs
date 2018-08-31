@@ -187,7 +187,7 @@ namespace BattleRight.Debugger
                 foreach (var player in EntitiesManager.AllPlayers)
                 {
                     var pos = player.MapObject.ScreenPosition;
-                    GUI.Label(new Rect(pos.X, pos.Y, 250, 1000), DebugObject(player));
+                    GUI.Label(new Rect(pos.X, pos.Y, 500, 1000), DebugObject(player));
                 }
             }
 
@@ -201,15 +201,10 @@ namespace BattleRight.Debugger
 						continue;
                     var result = buffs.Aggregate("", (current, b) => current + $"Buff ObjectName: {b.ObjectName} - AbilityName: {b.AbilityName}" +
                                                                      $" - Duration: {b.Duration} - TimeToExpire: {b.TimeToExpire}");
-                    GUI.Label(new Rect(pos.X, pos.Y, 250, 1000), result);
+                    GUI.Label(new Rect(pos.X, pos.Y, 500, 1000), result);
                 }
             }
-
-            if (DrawCircle)
-            {
-                Drawing.DrawCircle(InputManager.MousePosition.ScreenToWorld(), CircleRadiusSlider, Color.red);
-            }
-
+            
             if (DebugLine)
             {
                 var start = LocalPlayer.Instance.MapObject.Position;
@@ -247,8 +242,13 @@ namespace BattleRight.Debugger
                     var flags = ColFlags.Where(flag => Drawings.Get<MenuCheckBox>(flag))
                                                    .Aggregate<string, CollisionFlags>(0, (current, flag) => current | (CollisionFlags) Enum.Parse(typeof(CollisionFlags), flag));
                     var col = CollisionSolver.CheckThickLineCollision(start, end, LineWidth, flags);
+
                     if (col.IsColliding)
+                    {
                         end = col.CollisionPoint;
+                        var sPos = end.WorldToScreen();
+                        GUI.Label(new Rect(sPos.X, sPos.Y, 200, 100), col.CollisionFlags.ToString());
+                    }
                 }
                 var rect = CreateRect(start, end, LineWidth);
                 for (var i = 0; i <= rect.Length - 1; i++)
@@ -258,6 +258,11 @@ namespace BattleRight.Debugger
                     var to = rect[nextIndex];
                     Drawing.DrawLine(from, to, Color.white);
                 }
+            }
+
+            if (DrawCircle)
+            {
+                Drawing.DrawCircle(InputManager.MousePosition.ScreenToWorld(), CircleRadiusSlider, Color.red);
             }
         }
 
