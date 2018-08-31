@@ -21,7 +21,7 @@ namespace BattleRight.Debugger
         public Menu Main, Events, Players, Objects, Drawings;
         public MenuCheckBox MatchStart, MatchEnd, ObjectCreate, ObjectDestroy, MatchStateUpdate, Update, Draw, DebugBaseTypes,
                             SpellCast, StopCast, BuffGain, BuffRemove, PrintObject, DrawObject, DebugProjectiles, DebugLine, LineLock, LineCollision,
-                            ObjectsCollision, EnemyObjects, AllyObjects, IgnoreDeadObjects, DrawBuffs, DrawCircle;
+                            ObjectsCollision, EnemyObjects, AllyObjects, IgnoreDeadObjects, DrawBuffs, DrawCircle, ProjectileBaseTypes;
 
         public MenuSlider LineWidth, LineRange, CircleRadiusSlider;
         public bool LoadedBaseTypes;
@@ -106,6 +106,7 @@ namespace BattleRight.Debugger
             PrintObject = Objects.Add(new MenuCheckBox("print", "Debug Object Near Mouse With Left Click (Console).", false));
             DrawObject = Objects.Add(new MenuCheckBox("draw", "Draw Object States Near Mouse.", false));
             DebugProjectiles = Objects.Add(new MenuCheckBox("DebugProjectiles", "Debug Projectiles (Console).", false));
+            ProjectileBaseTypes = Objects.Add(new MenuCheckBox("ProjectileBaseTypes", "Debug Projectiles Base Types (extends from above option).", false));
             DebugProjectiles.OnValueChange += delegate (ChangedValueArgs<bool> args)
             {
                 if (args.NewValue)
@@ -156,7 +157,7 @@ namespace BattleRight.Debugger
                 var nearest = EntitiesManager.InGameObjects.FindAll(x => x.GetStates().Contains("[StateData] Position"))
                                              .OrderBy(x => ((Core.Math.Vector2)x.GetState("Position")).WorldToScreen()
                                                                                                       .Distance(InputManager.MousePosition)).FirstOrDefault();
-                Console.WriteLine(DebugObject(nearest, false, true));
+                Logs.Info(DebugObject(nearest, false, true));
             }
         }
 
@@ -272,6 +273,12 @@ namespace BattleRight.Debugger
 
 			if (projectile == null)
                 return;
+
+            if (ProjectileBaseTypes)
+            {
+                Logs.Info(DebugObject(projectile, false, true));
+                return;
+            }
 
             Logs.Info($"== Projectile_OnCreate\n - ObjectName: {projectile.ObjectName}\n - AbilityName: {projectile.AbilityName}" +
                       $"\n - StartPosition: {projectile.StartPosition}\n - LastPosition: {projectile.LastPosition}" +
