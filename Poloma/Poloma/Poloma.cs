@@ -130,7 +130,7 @@ namespace Poloma
 			}
 
 			Game.OnUpdate += GameOnOnUpdate;
-			Game.OnDraw += GameOnOnDraw;
+			Game.OnPreUpdate += GameOnOnDraw;
 		}
 
 		public void UnLoad()
